@@ -3,7 +3,7 @@ EpiDiverse-WGBS Pipeline
 
 **EpiDiverse/wgbs** is a bioinformatics analysis pipeline for aligning whole genome bisulfite sequencing data from non-model plant species.
 
-The workflow processes raw data from FastQ inputs ([FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/), [cutadapt](https://github.com/marcelm/cutadapt/)), aligns the reads ([erne-bs5](http://erne.sourceforge.net/) or [segemehl](https://www.bioinf.uni-leipzig.de/Software/segemehl/)), and performs extensive quality-control on the results using custom scripts and ([Picard MarkDuplicates](https://broadinstitute.github.io/picard/). Methylation calling and mbias correction is performed with ([Methyldackel](https://github.com/dpryan79/MethylDackel)).
+The workflow processes raw data from FastQ inputs ([FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/), [cutadapt](https://github.com/marcelm/cutadapt/)), aligns the reads ([erne-bs5](http://erne.sourceforge.net/) or [segemehl](https://www.bioinf.uni-leipzig.de/Software/segemehl/)), and performs extensive quality-control on the results using custom scripts and [Picard MarkDuplicates](https://broadinstitute.github.io/picard/). Methylation calling and mbias correction is performed with [Methyldackel](https://github.com/dpryan79/MethylDackel).
 
 See the [output documentation](https://github.com/EpiDiverse/wgbs/wiki/Pipeline-Output) for more details of the results.
 
@@ -27,7 +27,7 @@ iv. Start running your own analysis!
 nextflow run epidiverse/wgbs -profile <docker|singularity|conda> --input /path/to/reads/dir --reference /path/to/ref/dir
 ```
 
-See [usage docs](docs/usage.md) for all of the available options when running the pipeline.
+See [usage docs](https://github.com/EpiDiverse/wgbs/wiki/Pipeline-Usage) for all of the available options when running the pipeline.
 
 ### Wiki Documentation
 
@@ -44,7 +44,7 @@ The epidiverse/wgbs pipeline comes with documentation about the pipeline, [found
 
 ### Credits
 
-These scripts were originally written for use by the [EpiDiverse International Training Network](https://epidiverse.eu/), by Adam Nunn ([@bio15anu](https://github.com/bio15anu)) and Nilay Can.
+These scripts were originally written for use by the [EpiDiverse International Training Network](https://epidiverse.eu/), by Adam Nunn ([@bio15anu](https://github.com/bio15anu)) and Nilay Can ([@nilaycan](https://github.com/nilaycan)).
 
 This project has received funding from the European Union’s Horizon 2020 research and innovation
 programme under the Marie Skłodowska-Curie grant agreement No 764965

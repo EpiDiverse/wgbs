@@ -46,11 +46,11 @@ The pipeline uses [cutadapt](https://github.com/marcelm/cutadapt/) for removal o
 
 Contains FastQ files with quality and adapter trimmed reads for each sample, along with a log file describing the trimming.
 
+* `logs/[SAMPLE].log`
+  * Trimming report (describes which parameters that were used)
 * `[SAMPLE]_1.fq.gz`, `[SAMPLE]_2.fq.gz`
   * Trimmed FastQ data, reads 1 and 2.
   * **NB:** Only saved if `--keepReads` has been specified.
-* `logs/[SAMPLE].log`
-  * Trimming report (describes which parameters that were used)
 
 > Single-end data will have slightly different file names and only one FastQ file per sample.
 
@@ -59,11 +59,11 @@ Bisulfite read alignment by default is carried out by [erne-bs5](http://erne.sou
 
 **Output directory: `wgbs/[SAMPLE]/bam/`**
 
+* `logs/raw.erne-bs5.log` and/or `logs/raw.segemehl.log`
+  * Log file produced by the initial alignment by each tool.
 * `raw.erne-bs5.bam` and/or `raw.segemehl.bam`
   * Aligned reads in BAM format from the initial alignment.
   * **NB:** Only saved if `--keepBams`, is specified when running the pipeline.
-* `logs/raw.erne-bs5.log` and/or `logs/raw.segemehl.log`
-  * Log file produced by the initial alignment of each tool.
 * `proc.erne-bs5.bam` and/or `proc.segemehl.bam`
   * Post-processed BAM files that are corrected for .
   * **NB:** Only saved if it is the *final file* or if `--keepBams`, is specified when running the pipeline.
@@ -144,11 +144,11 @@ This step marks alignments with identical mapping position as duplicates to avoi
 
 **Output directory: `wgbs/[SAMPLE]/bam/`**
 
+* `logs/markDups.log`
+  * Log file for running Picard MarkDuplicates.
 * `markDups.bam`
   * BAM file with marked alignments.
   * **NB:** Only saved if `--keepBams`, is specified when running the pipeline.
-* `logs/markDups.log`
-  * Log file for Picard MarkDuplicates.
 
 **Output directory: `wgbs/[SAMPLE]/stats/`**
 
@@ -160,8 +160,26 @@ The methylation extractor step takes a BAM file with aligned reads and generates
 
 **Output directory: `wgbs/[SAMPLE]/bedGraph/`**
 
+* `logs/*.[SAMPLE].err`
+  * Log file produced from the std.err output from MethylDackel.
 * `[SAMPLE]_{CpG,CHG,CHH}.bedGraph`
   * bedGraph files with methylation information for each position, depending on context.
+
+Example *.bedGraph file:
+```bash
+#                                               Coverage    Coverage
+#Scaffold   Start       End         Meth (%)    Methylated  Unmethylated
+
+Chr1        108         109         100         6           0
+Chr1        109         110         100         23          0
+Chr1        114         115         100         6           0
+Chr1        115         116         95          21          1
+Chr1        160         161         72          8           3
+Chr1        161         162         80          8           2
+Chr1        309         310         50          1           1
+Chr1        310         311         25          1           3
+...
+```
 
 **Output directory: `wgbs/[SAMPLE]/stats/`**
 
@@ -203,7 +221,7 @@ Nextflow has several built-in reporting tools that give information about the pi
 
 * `dag.svg`
   * DAG graph giving a diagrammatic view of the pipeline run.
-  * NB: If [Graphviz](http://www.graphviz.org/) was not installed when running the pipeline, this file will be in [DOT format](http://www.graphviz.org/content/dot-language) instead of SVG.
+  * **NB:** If [Graphviz](http://www.graphviz.org/) was not installed when running the pipeline, this file will be in [DOT format](http://www.graphviz.org/content/dot-language) instead of SVG.
 * `report.html`
   * Nextflow report describing parameters, computational resource usage and task bash commands used.
 * `timeline.html`

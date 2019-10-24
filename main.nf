@@ -10,10 +10,11 @@ if(params.help){
          ===============================================
          E P I D I V E R S E - W G B S   P I P E L I N E
          ===============================================
-         ~ version ${manifest.version}
+         ~ version ${workflow.manifest.version}
 
          Usage: 
               nextflow run epidiverse/wgbs [OPTIONS]...
+
 
          Options: INPUT/OUTPUT
               --input [path/to/reads/dir]     [REQUIRED] Specify the path to the DIRECTORY containing the reads for analysis.
@@ -36,26 +37,16 @@ if(params.help){
                                           sub-directories for each set of reads analysed during the pipeline.
                                           [default: wgbs]
 
-              --keepReads                     Specify if you would like to keep processed reads eg. after trimming [default: off]
-
-              --keepBams                      Specify if you would like to keep intermediate bam files eg. raw alignments [default: off]
-
 
          Options: REFERENCE GENOME [REQUIRED]
-              --reference [path/to/ref/dir]   Path to directory containing the input reference genome. EpiDiverse species are
+              --reference [path/to/genome.fa] Path to the input reference genome file in fasta format. EpiDiverse species are
                                           already available on the server in the '/scr/epi/genomes' directory. For species
                                           not within the scope of EpiDiverse, please refer to the 'Custom Reference Genome'
-                                          section below.
+                                          section in the pipeline usage documentation.
 
-              --thlaspi                       Shortcut to reference genome for 'Thlaspi arvense'.
-              --fragaria                      Shortcut to reference genome for 'Fragaria vesca'.
-              --populus                       Shortcut to reference genome for 'Populus nigra'.
-
-
-         Options: METHYLATION CONTEXT
-              --noCpG                         Disable methylation calling in CpG context. [default: off]
-              --noCHH                         Disable methylation calling in CHH context. [default: off]
-              --noCHG                         Disable methylation calling in CHG context. [default: off]
+              --thlaspi                       Shortcut to reference genome for 'Thlaspi arvense' on EpiDiverse infrastructure.
+              --fragaria                      Shortcut to reference genome for 'Fragaria vesca' on EpiDiverse infrastructure.
+              --populus                       Shortcut to reference genome for 'Populus nigra' on EpiDiverse infrastructure.
 
 
          Options: GENERAL
@@ -67,6 +58,9 @@ if(params.help){
 
               --fastqc                        Generate fastqc report for sequencing reads. Report will be generated for
                                           trimmed reads if the trimming process has been enabled. [default: off]
+
+              --index                         Specify if you would like the pipeline to generate the reference genome index
+                                          automatically based on the options provided to the pipeline run. [default: off]
 
               --segemehl                      Enable bisulfite read alignment using only 'segemehl'. This has higher precision
                                           but is more memory and time intensive than 'erne-bs5'. [default: off]
@@ -88,6 +82,13 @@ if(params.help){
                                           should be removed from the final alignment bam files. [default: off]
                   
               --noDedup                       Skip de-duplication step for downstream filtering of PCR duplicates. [default: off]
+
+              --keepIndex                     Specify if you would like to keep generated index files. Can be used interchangeably
+                                          with --index to perform the same function while keeping index files. [default: off]
+
+              --keepReads                     Specify if you would like to keep processed reads eg. after trimming [default: off]
+
+              --keepBams                      Specify if you would like to keep intermediate bam files eg. raw alignments [default: off]
 
 
          Options: READ TRIMMING
@@ -116,10 +117,22 @@ if(params.help){
                                           [default: 0.03]
 
 
+         Options: METHYLATION CONTEXT
+              --noCpG                         Disable methylation calling in CpG context. [default: off]
+              --noCHH                         Disable methylation calling in CHH context. [default: off]
+              --noCHG                         Disable methylation calling in CHG context. [default: off]
+
+
+         Options: ADDITIONAL
+              --help                          Display this help information and exit
+              --version                       Display the current pipeline version and exit
+              --debug                         Run the pipeline in debug mode
+
+
          Example: 
               nextflow run epidiverse/wgbs \
               --input path/to/reads/dir \
-              --reference path/to/reference/dir \
+              --reference path/to/reference.fa \
               --output wgbs \
               --unique
 
@@ -128,7 +141,17 @@ if(params.help){
     exit 0
 }
 
-
+// PRINT VERSION AND EXIT
+if(params.version){
+    println """\
+         ===============================================
+         E P I D I V E R S E - W G B S   P I P E L I N E
+         ===============================================
+         ~ version ${workflow.manifest.version}
+    """
+    ["bash", "${baseDir}/bin/clean.sh", "${workflow.sessionId}"].execute()
+    exit 0
+}
 
 // DECLARE INITIAL PATH VARIABLES
 if (params.index) {
@@ -193,6 +216,7 @@ log.info "         (debug mode enabled)"
 log.info "         =================================================" }
 else {
 log.info "         =================================================" }
+log.info "         ~ version ${workflow.manifest.version}"
 log.info ""
 log.info "         reference      : ${fasta.baseName}"
 log.info "         input dir      : ${params.input}"
@@ -223,13 +247,17 @@ log.info "         min. overlap   : ${params.minOver}"
 log.info ""
 }
 
+log.info "         ================================================"
+log.info "         RUN NAME: ${workflow.runName}"
+log.info ""
+
 
 
 /////////////////////
 // COMMON CHANNELS //
 /////////////////////
 
-// attempt to call check_test_data function from libs/functions.nf if workflow.profile is test
+// attempt to call check_test_data function from libs/functions.nf if workflow.profile contains test
 if ( workflow.profile.tokenize(",").contains("test") ){
 
         include check_test_data from './libs/functions.nf' params(readPaths: params.readPaths, mergePaths: params.mergePaths, singleEnd: params.SE, merge: params.merge)
@@ -464,11 +492,11 @@ workflow.onComplete {
     log.info ""
     log.info "         Pipeline execution summary"
     log.info "         ---------------------------"
-    log.info "         Completed at : ${workflow.complete}"
-    log.info "         Duration     : ${workflow.duration}"
+    log.info "         Name         : ${workflow.runName}${workflow.resume ? " (resumed)" : ""}"
+    log.info "         Profile      : ${workflow.profile}"
+    log.info "         Launch dir   : ${workflow.launchDir}"    
+    log.info "         Work dir     : ${workflow.workDir} ${params.debug ? "" : "(cleared)" }"
     log.info "         Status       : ${workflow.success ? "success" : "failed"}"
-    log.info "         workDir      : ${workflow.workDir} ${!params.debug && workflow.success ? "(cleared)" : "" }"
-    log.info "         exit status  : ${workflow.exitStatus}"
     log.info "         Error report : ${workflow.errorReport ?: "-"}"
     log.info ""
 

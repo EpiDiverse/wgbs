@@ -1,5 +1,5 @@
-![EpiDiverse/wgbs Workflow](images/wgbs.png)
----
+# EpiDiverse-WGBS Usage
+This document describes the parameter options used by the pipeline.
 
 * [Running the pipeline](#running-the-pipeline)
 * [Inputs and outputs](#inputs-and-outputs)
@@ -38,6 +38,11 @@
     * [`-config`](#-config)
     * [`-resume`](#-resume)
     * [`-name`](#-name)
+
+## Workflow
+
+![EpiDiverse/dmr Workflow](images/dmr.png)
+---
 
 ## Running the pipeline
 The main command for running the pipeline is as follows:

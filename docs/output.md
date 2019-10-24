@@ -1,3 +1,4 @@
+# EpiDiverse-WGBS Output
 This document describes the output produced by the pipeline.
 
 ## Pipeline overview
@@ -165,7 +166,7 @@ The methylation extractor step takes a BAM file with aligned reads and generates
 * `[SAMPLE]_{CpG,CHG,CHH}.bedGraph`
   * bedGraph files with methylation information for each position, depending on context.
 
-Example *.bedGraph file:
+Example `*.bedGraph` file:
 ```bash
 #                                               Coverage    Coverage
 #Scaffold   Start       End         Meth (%)    Methylated  Unmethylated

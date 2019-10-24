@@ -1,3 +1,5 @@
+[<img width="200" align="right" src="docs/images/euflagbetter.jpg">](https://ec.europa.eu/programmes/horizon2020/en)
+[<img width="200" align="right" src="docs/images/epidiverse-logo.jpg">](https://epidiverse.eu)
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A519.09.0-brightgreen.svg)](https://www.nextflow.io/)
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg)](http://bioconda.github.io/)
 [![Docker](https://img.shields.io/docker/automated/epidiverse/wgbs.svg)](https://hub.docker.com/r/epidiverse/wgbs)
@@ -28,7 +30,8 @@ nextflow run epidiverse/wgbs -profile test,<docker|singularity|conda>
 iv. Start running your own analysis!
 
 ```bash
-nextflow run epidiverse/wgbs -profile <docker|singularity|conda> --input /path/to/reads/dir --reference /path/to/ref/dir
+nextflow run epidiverse/wgbs -profile <docker|singularity|conda> \
+--input /path/to/reads/directory --reference /path/to/reference.fasta
 ```
 
 > See the [usage documentation](docs/usage.md) for all of the available options when running the pipeline.

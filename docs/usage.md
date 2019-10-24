@@ -125,7 +125,7 @@ Minimum overlap length for adapter sequences in reads. [default: 3]
 Generate fastqc report for sequencing reads. Report will be generated for trimmed reads if the adapter trimming process has been enabled. [default: off]
 
 ## Read Alignment
-Bisulfite read alignment by default is carried out by ([erne-bs5](http://erne.sourceforge.net/), an efficient aligner based on a 5-letter sequence alphabet and an index built on a Burrows-Wheeler Transformation (BWT). Several additional parameters can also be provided to modify the mapping results:
+Bisulfite read alignment by default is carried out by [erne-bs5](http://erne.sourceforge.net/), an efficient aligner based on a 5-letter sequence alphabet and an index built on a Burrows-Wheeler Transformation (BWT). Several additional parameters can also be provided to modify the mapping results:
 
 `--minIns <ARG>`
 

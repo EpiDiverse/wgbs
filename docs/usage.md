@@ -41,7 +41,7 @@ This document describes the parameter options used by the pipeline.
 
 ## Workflow
 
-![EpiDiverse/dmr Workflow](images/dmr.png)
+![EpiDiverse/wgbs Workflow](images/wgbs.png)
 ---
 
 ## Running the pipeline

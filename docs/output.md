@@ -84,57 +84,57 @@ A combination of [samtools](http://www.htslib.org/) utilities `samtools stats` a
 * `[SAMPLE].bam.stats`
   * The raw text data output from `samtools stats` which is used to generate plots.
 
-![Coverage](images/coverage.png)
+<img align="center" alt="Coverage" src="images/coverage.png">
 
 * `bam/coverage.png`
   * The raw text data output from `samtools stats` which is used to generate plots.
 
-![GC Content](images/gc-content.png)
+<img align="center" alt="GC Content" src="images/gc-content.png">
 
 * `bam/gc-content.png`
   * The raw text data output from `samtools stats` which is used to generate plots.
 
-![GC Depth](images/gc-depth.png)
+<img align="center" alt="GC Depth" src="images/gc-depth.png">
 
 * `bam/gc-depth.png`
   * The raw text data output from `samtools stats` which is used to generate plots.
 
-![Base Content](images/acgt-cycles.png)
+<img align="center" alt="Base Content" src="images/acgt-cycles.png">
 
 * `bam/acgt-cycles.png`
   * The raw text data output from `samtools stats` which is used to generate plots.
 
-![Base Quality Distribution](images/quals-hm.png)
+<img align="center" alt="Base Quality Distribution" src="images/quals-hm.png">
 
 * `bam/quals-hm.png`
   * The raw text data output from `samtools stats` which is used to generate plots.
 
-![Average Base Quality](images/quals.png)
+<img align="center" alt="Average Base Quality" src="images/quals.png">
 
 * `bam/quals.png`
   * The raw text data output from `samtools stats` which is used to generate plots.
 
-![Average Base Quality](images/quals2.png)
+<img align="center" alt="Average Base Quality" src="images/quals2.png">
 
 * `bam/quals2.png`
   * The raw text data output from `samtools stats` which is used to generate plots.
 
-![Average Base Quality](images/quals3.png)
+<img align="center" alt="Average Base Quality" src="images/quals3.png">
 
 * `bam/quals3.png`
   * The raw text data output from `samtools stats` which is used to generate plots.
 
-![Insert Size Distribution][images/insert-size.png]
+<img align="center" alt="Insert Size Distribution" src="images/insert-size.png">
 
 * `bam/insert-size.png`
   * The raw text data output from `samtools stats` which is used to generate plots.
 
-![Indel Distributions][images/indel-dist.png]
+<img align="center" alt="Indel Distributions" src="images/indel-dist.png">
 
 * `bam/indel-dist.png`
   * The raw text data output from `samtools stats` which is used to generate plots.
 
-![Indel Cycles][images/indel-cycles.png]
+<img align="center" alt="Indel Cycles" src="images/indel-cycles.png">
 
 * `bam/indel-cycles.png`
   * The raw text data output from `samtools stats` which is used to generate plots.
@@ -165,8 +165,8 @@ The methylation extractor step takes a BAM file with aligned reads and generates
 
 **Output directory: `wgbs/[SAMPLE]/stats/`**
 
-![Mbias: Original Top][images/Mbias_OT.svg]
-![Mbias: Original Bottom][images/Mbias_OB.svg]
+<img align="center" alt="Mbias - Original Top" src="images/Mbias_OT.svg">
+<img align="center" alt="Mbias - Original Bottom" src="images/Mbias_OB.svg">
 
 * `Mbias_{OT,OB}.svg`
   * Analysis of methylation bias at the ends of reads, used for soft-clipping during methylation calling.
@@ -183,8 +183,10 @@ Conversion rate refers to the efficiency of the sodium-bisulfite treatment durin
 * `BisNonConvRate.txt`
   * A text file containing the % non-conversion rate from estimated from a scaffold within the reference genome and/or from an alternative source such as Lambda.
 
-    sampleA	J02459.1	Non-conversion Rate (%): 0.0414893
-    sampleA	chloropl	Non-conversion Rate (%): 0.0547547
+```
+sampleA     J02459.1        Non-conversion Rate (%): 0.0414893
+sampleA     chloroplast     Non-conversion Rate (%): 0.0547547
+```
 
 **Output directory: `wgbs/[sample]/bam/`**
 

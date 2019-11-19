@@ -156,17 +156,19 @@ if(params.version){
 if (params.index) {
 
     fasta = file("${params.reference}", checkIfExists: true, glob: false)
+    fai = file("${params.reference}.fai", checkIfExists: true, glob: false)
 
 } else {
 
     // attempt to call check_ref_errors function from libs/functions.nf if workflow.profile is epidiverse
     if ( workflow.profile.tokenize(",").contains("epi") || workflow.profile.tokenize(",").contains("diverse") ){
         include check_ref_errors from './libs/functions.nf' params(reference: params.reference, thlaspi: params.thlaspi, populus: params.populus, fragaria: params.fragaria, nolambda: params.noLambda)
-        (fasta, ebm_path, ctidx_path, gaidx_path) = check_ref_errors(params.reference, params.thlaspi, params.fragaria, params.populus, params.noLambda)
+        (fasta, fai, ebm_path, ctidx_path, gaidx_path) = check_ref_errors(params.reference, params.thlaspi, params.fragaria, params.populus, params.noLambda)
     }
 
     else {
         fasta = file("${params.reference}", checkIfExists: true, glob: false)
+        fai = file("${params.reference}.fai", checkIfExists: true, glob: false)
         ebm_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.ebm" : "${params.reference}/lambda/*.ebm"
         ctidx_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.ctidx" : "${params.reference}/lambda/*.ctidx"
         gaidx_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.gaidx" : "${params.reference}/lambda/*.gaidx"
@@ -190,7 +192,6 @@ else {context = "--CHH --CHG "}
 
 
 // STAGE REFERENCE FILES
-fai = file("${fasta}.fai", checkIfExists: true, glob: false)
 lamfa = file("${params.split}", checkIfExists: true, glob: false)
 lai = file("${params.split}.fai", checkIfExists: true, glob: false)
 

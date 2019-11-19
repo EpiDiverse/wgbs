@@ -32,10 +32,9 @@ if(params.help){
                                           analysed in parallel. The individual reads specified in the --merge files must
                                           also be absent from the --input files. [default: off]
 
-              --output [STR]                  A string that will be used as the name for the output results directory, which
-                                          will be generated in the working directory. This directory will contain
-                                          sub-directories for each set of reads analysed during the pipeline.
-                                          [default: wgbs]
+              --output [path/to/output/dir]   A path to a location to write the output results directory, which can be relative
+                                          or absolute. This directory will contain sub-directories for each set of reads analysed
+                                          during the pipeline. [default: wgbs]
 
 
          Options: REFERENCE GENOME [REQUIRED]
@@ -174,9 +173,6 @@ if (params.index) {
     }
 }
 
-// output directory
-results_path = "$PWD/${params.output}"
-
 // establish path to reads in input and merge dirs
 reads_path = params.SE ? "${params.input}/*.fastq.gz" : "${params.input}/*{1,2}.fastq.gz"
 merge_path = params.SE ? "${params.merge}/*.fastq.gz" : "${params.merge}/*{1,2}.fastq.gz"
@@ -220,7 +216,7 @@ log.info "         ~ version ${workflow.manifest.version}"
 log.info ""
 log.info "         reference      : ${fasta.baseName}"
 log.info "         input dir      : ${params.input}"
-log.info "         ${params.merge ? "merge dir      : $params.merge\n" : "" }output dir     : ${results_path}"
+log.info "         ${params.merge ? "merge dir      : $params.merge\n" : "" }output dir     : ${params.output}"
 log.info "         read type      : ${params.SE ? "single-end" : "paired-end (min: $params.minIns max: $params.maxIns)" }"
 log.info "         read trimming  : ${params.trim ? 'enable' : 'disable' }"
 log.info "         fastqc report  : ${params.fastqc ? 'enable' : 'disable' }"
@@ -422,56 +418,56 @@ workflow {
             INDEX(Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty())
             WGBS(reads,merged,ebm,ctidx,gaidx,fasta,fai,lamfa,lai,chrom,context)
         }
-        WGBS.out.conversion_rate_publish.collectFile().subscribe{ it.copyTo("${results_path}/${it.baseName}/stats/BisNonConvRate.txt") }
+        WGBS.out.conversion_rate_publish.collectFile().subscribe{ it.copyTo("${params.output}/${it.baseName}/stats/BisNonConvRate.txt") }
 
     publish:
         // Reference index
-        INDEX.out.ebm to: "$results_path", mode: 'copy', enabled: params.index ? true : false
-        INDEX.out.ctidx to: "$results_path", mode: 'copy', enabled: params.index ? true : false
-        INDEX.out.gaidx to: "$results_path", mode: 'copy', enabled: params.index ? true : false
+        INDEX.out.ebm to: "${params.output}", mode: 'copy', enabled: params.index ? true : false
+        INDEX.out.ctidx to: "${params.output}", mode: 'copy', enabled: params.index ? true : false
+        INDEX.out.gaidx to: "${params.output}", mode: 'copy', enabled: params.index ? true : false
         
         // Initial processing and alignment
-        WGBS.out.read_trimming_publish to: "$results_path", mode: 'copy', enabled: params.keepReads && !params.merge ? true : false
-        WGBS.out.read_merging_publish to: "$results_path", mode: 'copy', enabled: params.keepReads && params.trim ? true : false
-        WGBS.out.erne_bs5_publish to: "$results_path", mode: 'copy', enabled: params.keepBams ? true : false
-        WGBS.out.segemehl_publish to: "$results_path", mode: 'copy', enabled: params.keepBams ? true : false
+        WGBS.out.read_trimming_publish to: "${params.output}", mode: 'copy', enabled: params.keepReads && !params.merge ? true : false
+        WGBS.out.read_merging_publish to: "${params.output}", mode: 'copy', enabled: params.keepReads && params.trim ? true : false
+        WGBS.out.erne_bs5_publish to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
+        WGBS.out.segemehl_publish to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
 
         // Post-Processed BAM files
-        WGBS.out.erne_bs5_processing_publish to: "$results_path", mode: 'copy', \
+        WGBS.out.erne_bs5_processing_publish to: "${params.output}", mode: 'copy', \
             enabled: params.keepBams || (!params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
-        WGBS.out.segemehl_processing_publish to: "$results_path", mode: 'copy', \
+        WGBS.out.segemehl_processing_publish to: "${params.output}", mode: 'copy', \
             enabled: params.keepBams || (!params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
-        WGBS.out.erne_bs5_processing_link to: "$results_path", mode: 'copyNoFollow', \
+        WGBS.out.erne_bs5_processing_link to: "${params.output}", mode: 'copyNoFollow', \
             enabled: !params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? true : false
-        WGBS.out.segemehl_processing_link to: "$results_path", mode: 'copyNoFollow', \
+        WGBS.out.segemehl_processing_link to: "${params.output}", mode: 'copyNoFollow', \
             enabled: !params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? true : false
 
         // Merging and Subsetting BAM files
-        WGBS.out.bam_merging_publish to: "$results_path", mode: 'copy', \
+        WGBS.out.bam_merging_publish to: "${params.output}", mode: 'copy', \
             enabled: params.keepBams || (params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
-        WGBS.out.bam_merging_link to: "$results_path", mode: 'copyNoFollow', \
+        WGBS.out.bam_merging_link to: "${params.output}", mode: 'copyNoFollow', \
             enabled: params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? true : false
-        WGBS.out.bam_subsetting_publish_lambda to: "$results_path", mode: 'copy', enabled: params.keepBams ? true : false
-        WGBS.out.bam_subsetting_publish_subset to: "$results_path", mode: 'copy', enabled: true
-        WGBS.out.bam_subsetting_link to: "$results_path", mode: 'copyNoFollow', enabled: true
+        WGBS.out.bam_subsetting_publish_lambda to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
+        WGBS.out.bam_subsetting_publish_subset to: "${params.output}", mode: 'copy', enabled: true
+        WGBS.out.bam_subsetting_link to: "${params.output}", mode: 'copyNoFollow', enabled: true
 
         // Deduplication and Methylation Calling
-        WGBS.out.bam_processing_publish to: "$results_path", mode: 'copy', enabled: params.keepBams ? true : false
-        WGBS.out.picard_markduplicates_publish_bam to: "$results_path", mode: 'copy', enabled: params.keepBams ? true : false
-        WGBS.out.methyldackel_publish_bed to: "$results_path", mode: 'copy'
+        WGBS.out.bam_processing_publish to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
+        WGBS.out.picard_markduplicates_publish_bam to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
+        WGBS.out.methyldackel_publish_bed to: "${params.output}", mode: 'copy'
 
         // Reports, statistics and logs
-        WGBS.out.read_trimming_log to: "$results_path", mode: 'move'
-        WGBS.out.fastqc_publish to: "$results_path", mode: 'move'
-        WGBS.out.fastqc_log to: "$results_path", mode: 'move'
-        WGBS.out.erne_bs5_log to: "$results_path", mode: 'move'
-        WGBS.out.segemehl_log to: "$results_path", mode: 'move'
-        WGBS.out.bam_statistics_publish_sts to: "$results_path", mode: 'move'
-        WGBS.out.bam_statistics_publish_png to: "$results_path", mode: 'move'
-        WGBS.out.picard_markduplicates_publish_sts to: "$results_path", mode: 'move'
-        WGBS.out.picard_markduplicates_log to: "$results_path", mode: 'move'
-        WGBS.out.methyldackel_publish_svg to: "$results_path", mode: 'move'
-        WGBS.out.methyldackel_log to: "$results_path", mode: 'move'
+        WGBS.out.read_trimming_log to: "${params.output}", mode: 'move'
+        WGBS.out.fastqc_publish to: "${params.output}", mode: 'move'
+        WGBS.out.fastqc_log to: "${params.output}", mode: 'move'
+        WGBS.out.erne_bs5_log to: "${params.output}", mode: 'move'
+        WGBS.out.segemehl_log to: "${params.output}", mode: 'move'
+        WGBS.out.bam_statistics_publish_sts to: "${params.output}", mode: 'move'
+        WGBS.out.bam_statistics_publish_png to: "${params.output}", mode: 'move'
+        WGBS.out.picard_markduplicates_publish_sts to: "${params.output}", mode: 'move'
+        WGBS.out.picard_markduplicates_log to: "${params.output}", mode: 'move'
+        WGBS.out.methyldackel_publish_svg to: "${params.output}", mode: 'move'
+        WGBS.out.methyldackel_log to: "${params.output}", mode: 'move'
 
 }
 

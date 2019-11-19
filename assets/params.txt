@@ -1,0 +1,59 @@
+// params.txt
+// usage: nextflow run epidiverse/wgbs [OPTIONS] -params-file /path/to/params.txt
+//
+// this example params file can be used for repeatable analyses instead of specifying parameters
+// directly on the command line.
+// 
+// detailed explanation of pipeline parameters can be found with: nextflow run epidiverse/wgbs --help
+
+// DEFAULT PARAMETERS
+params {
+
+	// BASIC PARAMS
+	help = false
+	debug = false
+
+	// INPUT / OUTPUT
+	input = "/path/to/input/reads/directory"
+	merge = "/path/to/input/reads/directory"
+	output = "/path/to/output/directory"
+	keepReads = false
+	keepBams = false
+	take = "20" // set to -1 to take all
+
+	// REFERENCE GENOME
+	reference = "/path/to/reference/directory"
+	index = false
+	chrom = false
+	split = "/path/to/custom/spike-in.fa"
+
+	// GENERAL PARAMS
+	SE = false
+	fastqc = false
+	trim = false
+	noLambda = false
+	noDedup = false
+	unique = false
+
+	// METHYLATION CONTEXT
+	noCpG = false
+	noCHH = false
+	noCHG = false
+
+	// TRIMMING PARAMS
+	forward = "AGATCGGAAGAGCACACGTCTGAAC"
+	reverse = "AGATCGGAAGAGCGTCGTGTAGGGA"
+	clip5 = "0"
+	clip3 = "0"
+	minOver = "3"
+	minLeng = "36"
+	minQual = "20"
+
+	// MAPPING PARAMS
+	segemehl = false
+	minIns = "0"
+	maxIns = "500"
+	maxErrors = "-1"
+	minAccuracy = "90"
+	XF = "0.03"
+}

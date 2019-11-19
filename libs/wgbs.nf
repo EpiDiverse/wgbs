@@ -480,12 +480,15 @@ process "bam_statistics" {
     // eg. [replicate, bamtype, bamfile.bam]
 
     output:
-    path "${replicate}/stats/${replicate}.bam.stats"   
+    path "${replicate}/stats/${replicate}.bam.stats"
+    path "${replicate}/stats/bam/*.png"    
 
     script:
     """
-    mkdir ${replicate} ${replicate}/stats
-    samtools stats ${bamfile} > ${replicate}/stats/${replicate}.bam.stats
+    mkdir ${replicate} ${replicate}/stats ${replicate}/stats/bam
+    samtools sort -T deleteme -o sorted.bam ${bamfile}
+    samtools stats sorted.bam > ${replicate}/stats/${replicate}.bam.stats
+    plot-bamstats -p ${replicate}/stats/bam/ ${replicate}/stats/${replicate}.bam.stats
     """    
 }
 

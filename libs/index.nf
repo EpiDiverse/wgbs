@@ -4,6 +4,9 @@
 // FAST READ ALIGNMENT USING "erne-bs5" 
 process "erne_bs5_indexing" {
 
+    label "low"
+    label "finish"
+
     input:
     path fasta
     path fai
@@ -30,6 +33,9 @@ process "erne_bs5_indexing" {
 
 // INDEXING FOR "erne-bs5" 
 process "segemehl_indexing" {
+
+    label "low"
+    label "finish"
 
     input:
     path fasta

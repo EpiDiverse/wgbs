@@ -53,7 +53,7 @@ def check_ref_errors(reference,thlaspi,fragaria,populus,nolambda) {
         def ebm = nolambda ? "${populus_dir}/index/populus.ebm" : "${populus_dir}/lambda/lambda.ebm"
         def ctidx = nolambda ? "${populus_dir}/index/populus.ctidx" : "${populus_dir}/lambda/lambda.ctidx"
         def gaidx = nolambda ? "${populus_dir}/index/populus.gaidx" : "${populus_dir}/lambda/lambda.gaidx"
-        return tuple(fasta, ebm, ctidx, gaidx)
+        return tuple(fasta, fai, ebm, ctidx, gaidx)
     }
 
     else {

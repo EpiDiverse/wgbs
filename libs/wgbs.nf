@@ -24,7 +24,7 @@ process "stage_input_directories" {
     script:
     """
     mkdir ${replicate} ${replicate}/fastq
-    cp -a *.fastq.gz ${replicate}/fastq
+    cp -a *.${params.extension} ${replicate}/fastq
     """
 
 }
@@ -51,7 +51,7 @@ process "stage_merge_directories" {
     script:
     """
     mkdir ${replicate} ${replicate}/fastq
-    cp -a *.fastq.gz ${replicate}/fastq
+    cp -a *.${params.extension} ${replicate}/fastq
     """
 
 }
@@ -75,7 +75,7 @@ process "read_trimming" {
     output:
     tuple replicate, readtype, path("$replicate")
     // eg. [replicate, /path/to/replicate]
-    path "$replicate/fastq/*.fastq.gz"
+    path "$replicate/fastq/*.${params.extension}"
     path "$replicate/fastq/logs/*.log"
 
     when:
@@ -84,7 +84,7 @@ process "read_trimming" {
     script:
     if( params.SE )
         """
-        fq=inputs/fastq/*.fastq.gz
+        fq=inputs/fastq/*.${params.extension}
         mkdir ${replicate} ${replicate}/fastq ${replicate}/fastq/logs
 
         cutadapt -j ${task.cpus} -a ${params.forward}${cutadapt_clip5}${cutadapt_clip3} \\
@@ -94,8 +94,8 @@ process "read_trimming" {
         """
     else
         """
-        fq1=inputs/fastq/*1.fastq.gz
-        fq2=inputs/fastq/*2.fastq.gz
+        fq1=inputs/fastq/*1.${params.extension}
+        fq2=inputs/fastq/*2.${params.extension}
         mkdir ${replicate} ${replicate}/fastq ${replicate}/fastq/logs
 
         cutadapt -j ${task.cpus} -a ${params.forward} -A ${params.reverse}${cutadapt_clip5}${cutadapt_clip3} \\
@@ -123,7 +123,7 @@ process "read_merging" {
     output:
     tuple replicate, readtype, path("$replicate")
     // eg. [replicate, ["input","merge"], /path/to/replicate]
-    path "$replicate/fastq/*.fastq.gz"
+    path "$replicate/fastq/*.${params.extension}"
 
     when:
     (params.merge && (params.fastqc || (params.trim && params.keepReads)))
@@ -132,12 +132,12 @@ process "read_merging" {
     if( params.SE )
         """
         mkdir ${replicate} ${replicate}/fastq
-        cat inputs*/fastq/*.fastq.gz > ${replicate}/fastq/${replicate}.fastq.gz
+        cat inputs*/fastq/*.${params.extension} > ${replicate}/fastq/${replicate}.${params.extension}
         """
     else
         """
         mkdir ${replicate} ${replicate}/fastq
-        echo -e "1\\n2" | xargs -I{} sh -c 'cat inputs*/fastq/*\$1.fastq.gz > ${replicate}/fastq/${replicate}_\$1.fastq.gz' -- {}
+        echo -e "1\\n2" | xargs -I{} sh -c 'cat inputs*/fastq/*\$1.${params.extension} > ${replicate}/fastq/${replicate}_\$1.${params.extension}' -- {}
         """
 }
 
@@ -195,7 +195,7 @@ process "erne_bs5" {
     script:
     if( params.SE )
         """
-        fq=inputs/fastq/*.fastq.gz
+        fq=inputs/fastq/*.${params.extension}
         mkdir ${replicate} ${replicate}/bam ${replicate}/bam/logs
 
         erne-bs5 --reference ${ebm} --query1 \$fq --fragment-size-min ${params.minIns} --fragment-size-max ${params.maxIns} \\
@@ -205,8 +205,8 @@ process "erne_bs5" {
         """
     else
         """
-        fq1=inputs/fastq/*1.fastq.gz
-        fq2=inputs/fastq/*2.fastq.gz
+        fq1=inputs/fastq/*1.${params.extension}
+        fq2=inputs/fastq/*2.${params.extension}
         mkdir ${replicate} ${replicate}/bam ${replicate}/bam/logs
 
         erne-bs5 --reference ${ebm} --query1 \$fq1 --query2 \$fq2 --fragment-size-min ${params.minIns} --fragment-size-max ${params.maxIns} \\
@@ -245,7 +245,7 @@ process "segemehl" {
     script:
     if( params.SE )
         """
-        fq=inputs/fastq/*.fastq.gz
+        fq=inputs/fastq/*.${params.extension}
         mkdir ${replicate} ${replicate}/bam ${replicate}/bam/logs
 
         segemehl.x -i ${ctidx} -j ${gaidx} \\
@@ -256,8 +256,8 @@ process "segemehl" {
         """
     else
         """
-        fq1=inputs/fastq/*1.fastq.gz
-        fq2=inputs/fastq/*2.fastq.gz
+        fq1=inputs/fastq/*1.${params.extension}
+        fq2=inputs/fastq/*2.${params.extension}
         mkdir ${replicate} ${replicate}/bam ${replicate}/bam/logs
         
         segemehl.x -i ${ctidx} -j ${gaidx} \\

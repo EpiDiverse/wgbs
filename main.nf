@@ -176,8 +176,8 @@ if (params.index) {
 }
 
 // establish path to reads in input and merge dirs
-reads_path = params.SE ? "${params.input}/*.fastq.gz" : "${params.input}/*{1,2}.fastq.gz"
-merge_path = params.SE ? "${params.merge}/*.fastq.gz" : "${params.merge}/*{1,2}.fastq.gz"
+reads_path = params.SE ? "${params.input}/*.${params.extension}" : "${params.input}/*{1,2}.${params.extension}"
+merge_path = params.SE ? "${params.merge}/*.${params.extension}" : "${params.merge}/*{1,2}.${params.extension}"
 
 
 // determine contexts
@@ -218,6 +218,7 @@ log.info ""
 log.info "         reference      : ${fasta.baseName}"
 log.info "         input dir      : ${params.input}"
 log.info "         ${params.merge ? "merge dir      : $params.merge\n" : "" }output dir     : ${params.output}"
+log.info "         extension      : *.${params.extension}"
 log.info "         read type      : ${params.SE ? "single-end" : "paired-end (min: $params.minIns max: $params.maxIns)" }"
 log.info "         read trimming  : ${params.trim ? 'enable' : 'disable' }"
 log.info "         fastqc report  : ${params.fastqc ? 'enable' : 'disable' }"
@@ -266,7 +267,8 @@ if ( workflow.profile.tokenize(",").contains("test") ){
 reads = Channel
     .fromFilePairs(reads_path, size: params.SE ? 1 : 2)
     .ifEmpty{ exit 1, "ERROR: cannot find valid read files in dir: ${params.input}\n \
-    The pipeline will expect PE reads in compressed *{1,2}.fastq.gz format unless you have specified the --SE parameter."}
+    The pipeline will expect PE reads in compressed *{1,2}.${params.extension} format\n \
+    unless you have specified the --SE parameter or a different extension using --extension"}
     .take(params.take.toInteger())
 
 //STAGE READS MERGE CHANNEL
@@ -274,7 +276,8 @@ merged = !params.merge ? Channel.empty() :
 Channel
     .fromFilePairs(merge_path, size: params.SE ? 1 : 2)
     .ifEmpty{ exit 1, "ERROR: cannot find valid read files in dir: ${params.merge}\n \
-    The pipeline will expect PE reads in compressed *{1,2}.fastq.gz format unless you have specified the --SE parameter."}
+    The pipeline will expect PE reads in compressed *{1,2}.${params.extension} format\n \
+    unless you have specified the --SE parameter or a different extension using --extension"}
     .take(params.take.toInteger())
 
 }

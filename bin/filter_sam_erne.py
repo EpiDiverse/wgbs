@@ -63,13 +63,16 @@ def main(FASTA,BAM,OUT,TEMP,CUTOFF,THREADS):
 	# 3) Open initial BAM file instance to read references
 	with pysam.AlignmentFile(BAM, "rb") as original:
 
+		header = original.header.to_dict()
+		if "CO" in header: del header["CO"]
+
 		lengths = original.lengths
 		for ref in original.get_index_statistics():
 
 			# 4) Fire off workers to process reads for each scaffold 'ref' from 'BAM'
 			if ref.mapped > 0:
 				tid = original.get_tid(ref.contig)
-				job = pool.apply_async(worker, (BAM, TDIR, CUTOFF, ref.contig, genome.pop(ref.contig), lengths[tid]))
+				job = pool.apply_async(worker, (BAM, TDIR, CUTOFF, header, ref.contig, genome.pop(ref.contig), lengths[tid]))
 				jobs.append(job)
 	
 	# 5) Merge results from the workers with a recursive merging function
@@ -126,7 +129,7 @@ def build_genome(FASTA):
 
 
 ####### Function for READING the input reads, modifying, and sending them to 'q'
-def worker(BAM,TDIR,CUTOFF,rnam,rseq,rlen):
+def worker(BAM,TDIR,CUTOFF,header,rnam,rseq,rlen):
 
 	'''
 	BAM = path to input bam file eg. "/path/to/input.bam"
@@ -141,7 +144,7 @@ def worker(BAM,TDIR,CUTOFF,rnam,rseq,rlen):
 	name = TDIR + "/" + rnam + ".bam"
 
 	# Open pysam.AlignmentFile objects for reading and writing
-	with pysam.AlignmentFile(BAM, "rb") as original, pysam.AlignmentFile(name, "wb", header=original.header) as modified:
+	with pysam.AlignmentFile(BAM, "rb") as original, pysam.AlignmentFile(name, "wb", header=header) as modified:
 
 		# 2) Iterate through input SAM/BAM file
 		for read in original.fetch(rnam):
@@ -203,7 +206,7 @@ def merger(TDIR,batch):
 	bam = tempfile.mktemp(dir=TDIR)
 
 	# merge list of files from batch
-	arguments = ["-f",bam]
+	arguments = ["-cpf",bam]
 	arguments = arguments + batch
 	pysam.merge(*arguments)
 

@@ -73,11 +73,14 @@ def main(BAM,OUT,TEMP,THREADS,MAXINS):
     # 2) Open initial BAM file instance to read references
     with pysam.AlignmentFile(BAM, "rb") as original:
 
+        header = original.header.to_dict()
+        if "CO" in header: del header["CO"]
+
         for ref in original.get_index_statistics():
 
             # 3) Fire off workers to process reads for each scaffold 'ref' from 'BAM'
             if ref.mapped > 0:
-                job = pool.apply_async(worker, (BAM, TDIR, ref.contig, MAXINS))
+                job = pool.apply_async(worker, (BAM, TDIR, header, ref.contig, MAXINS))
                 jobs.append(job)
 
     # 4) Merge results from the workers with a recursive merging function
@@ -94,11 +97,12 @@ def main(BAM,OUT,TEMP,THREADS,MAXINS):
 ## DEFINE FUNCTIONS
 
 ####### Function for READING the input reads, modifying, and sending them to 'q'
-def worker(BAM,TDIR,rnam,MAXINS):
+def worker(BAM,TDIR,header,rnam,MAXINS):
 
     '''
     BAM = path to input bam file eg. "/path/to/input.bam"
     TDIR = path to temp dir for processed bam files eg. "/var/tmp/adfas7d"
+    header = dictionary object containing modified header for writing
     ref = current scaffold or chromosome reference eg. "Chr1"
     MAXINS = maximum insert size integer eg. 500
     '''
@@ -107,7 +111,7 @@ def worker(BAM,TDIR,rnam,MAXINS):
     name = TDIR + "/" + rnam + ".bam"
 
     # Open pysam.AlignmentFile objects for reading and writing
-    with pysam.AlignmentFile(BAM, "rb") as original, pysam.AlignmentFile(name, "wb", header=original.header) as modified:
+    with pysam.AlignmentFile(BAM, "rb") as original, pysam.AlignmentFile(name, "wb", header=header) as modified:
 
         # declare initial vars
         mates = dict()
@@ -212,7 +216,7 @@ def merger(TDIR,batch):
 	bam = tempfile.mktemp(dir=TDIR)
 
 	# merge
-	arguments = ["-f",bam]
+	arguments = ["-cpf",bam]
 	arguments = arguments + batch
 	pysam.merge(*arguments)
 

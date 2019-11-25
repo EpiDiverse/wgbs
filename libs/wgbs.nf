@@ -252,7 +252,7 @@ process "segemehl" {
         -d ${params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${fasta}" : "${fasta} ${lamfa}"} \\
         -q \$fq -o raw.segemehl.sam -I ${params.maxIns} -A ${params.minAccuracy} -s -t ${task.cpus} -F 1 -H 1 -D 1 \\
         > ${replicate}/bam/logs/raw.segemehl.log 2>&1 || exit \$?
-        samtools view -Sb raw.segemehl.sam | samtools sort -o ${replicate}/bam/raw.segemehl.bam -
+        samtools view -Sb raw.segemehl.sam > raw.segemehl.bam
         """
     else
         """
@@ -264,7 +264,7 @@ process "segemehl" {
         -d ${params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${fasta}" : "${fasta} ${lamfa}"} \\
         -q \$fq1 -p \$fq2 -o raw.segemehl.sam -I ${params.maxIns} -A ${params.minAccuracy} -s -t ${task.cpus} -F 1 -H 1 -D 1 \\
         > ${replicate}/bam/logs/raw.segemehl.log 2>&1 || exit \$?
-        samtools view -Sb raw.segemehl.sam | samtools sort -o ${replicate}/bam/raw.segemehl.bam -
+        samtools view -Sb raw.segemehl.sam > raw.segemehl.bam
         """
 
 }
@@ -296,6 +296,7 @@ process "erne_bs5_processing" {
 
         samtools index ${erne}
         correct_sam_cigar.py ${erne} corrected.erne-bs5.bam || exit \$?
+    
         samtools sort -T deleteme -o sorted.erne-bs5.bam corrected.erne-bs5.bam
         samtools index sorted.erne-bs5.bam
         filter_sam_erne.py -c ${params.XF} -t ${task.cpus} -T . ${fasta} sorted.erne-bs5.bam ${replicate}/bam/proc.erne-bs5.bam
@@ -307,21 +308,18 @@ process "erne_bs5_processing" {
 
         samtools index ${erne}
         correct_sam_format.py -i ${params.maxIns} -t ${task.cpus} -T . ${erne} corrected.erne-bs5.bam || exit \$?
-        samtools sort -T deleteme -o sorted.erne-bs5.bam corrected.erne-bs5.bam
+
+        samtools sort -T deleteme -no unsorted.erne-bs5.bam corrected.erne-bs5.bam
+        correct_sam_tlens -i unsorted.erne-bs5.bam > tlens.erne-bs5.bam || exit \$?
+
+        samtools sort -T deleteme -o sorted.erne-bs5.bam tlens.erne-bs5.bam
         samtools index sorted.erne-bs5.bam
-        correct_sam_tlens -i sorted.erne-bs5.bam > tlens.erne-bs5.bam || exit \$?
-        samtools index tlens.erne-bs5.bam
-        filter_sam_erne.py -c ${params.XF} -t ${task.cpus} -T . ${fasta} tlens.erne-bs5.bam ${replicate}/bam/proc.erne-bs5.bam
+        filter_sam_erne.py -c ${params.XF} -t ${task.cpus} -T . ${fasta} sorted.erne-bs5.bam ${replicate}/bam/proc.erne-bs5.bam
         """
     else if (params.SE)
         """
         mkdir ${replicate} ${replicate}/bam
         ln -s bam/proc.erne-bs5.bam ${replicate}/${replicate}.bam
-        
-        samtools index ${erne}
-        correct_sam_cigar.py ${erne} corrected.erne-bs5.bam || exit \$?
-        samtools sort -T deleteme -o sorted.erne-bs5.bam corrected.erne-bs5.bam
-        samtools index sorted.erne-bs5.bam
 
         if [ -z "\$(tail -c 1 ${fasta})" ]
         then
@@ -330,19 +328,17 @@ process "erne_bs5_processing" {
         cat ${fasta} > fasta.tmp; echo >> fasta.tmp; cat ${lamfa} >> fasta.tmp
         fi
 
+        samtools index ${erne}
+        correct_sam_cigar.py ${erne} corrected.erne-bs5.bam || exit \$?
+
+        samtools sort -T deleteme -o sorted.erne-bs5.bam corrected.erne-bs5.bam
+        samtools index sorted.erne-bs5.bam
         filter_sam_erne.py -c ${params.XF} -t ${task.cpus} -T . fasta.tmp sorted.erne-bs5.bam ${replicate}/bam/proc.erne-bs5.bam
         """
     else
         """
         mkdir ${replicate} ${replicate}/bam
         ln -s bam/proc.erne-bs5.bam ${replicate}/${replicate}.bam
-
-        samtools index ${erne}
-        correct_sam_format.py -i ${params.maxIns} -t ${task.cpus} -T . ${erne} corrected.erne-bs5.bam || exit \$?
-        samtools sort -T deleteme -o sorted.erne-bs5.bam corrected.erne-bs5.bam
-        samtools index sorted.erne-bs5.bam
-        correct_sam_tlens -i sorted.erne-bs5.bam > tlens.erne-bs5.bam || exit \$?
-        samtools index tlens.erne-bs5.bam
 
         if [ -z "\$(tail -c 1 ${fasta})" ]
         then
@@ -351,7 +347,16 @@ process "erne_bs5_processing" {
         cat ${fasta} > fasta.tmp; echo >> fasta.tmp; cat ${lamfa} >> fasta.tmp      
         fi
 
-        filter_sam_erne.py -c ${params.XF} -t ${task.cpus} -T . fasta.tmp tlens.erne-bs5.bam ${replicate}/bam/proc.erne-bs5.bam
+        samtools index ${erne}
+        correct_sam_format.py -i ${params.maxIns} -t ${task.cpus} -T . ${erne} corrected.erne-bs5.bam || exit \$?
+
+        samtools sort -T deleteme -no unsorted.erne-bs5.bam corrected.erne-bs5.bam
+        correct_sam_tlens -i unsorted.erne-bs5.bam > tlens.erne-bs5.bam || exit \$?
+
+        samtools sort -T deleteme -o sorted.erne-bs5.bam tlens.erne-bs5.bam
+        samtools index sorted.erne-bs5.bam
+
+        filter_sam_erne.py -c ${params.XF} -t ${task.cpus} -T . fasta.tmp sorted.erne-bs5.bam ${replicate}/bam/proc.erne-bs5.bam
         """
 }
 
@@ -377,16 +382,20 @@ process "segemehl_processing" {
     if(params.SE)
         """
         mkdir ${replicate} ${replicate}/bam
-        samtools index ${sege}
-        filter_sam_xf_tag.py -c ${params.XF} ${sege} ${replicate}/bam/proc.segemehl.bam || exit \$?
+        samtools sort -o sorted.segemehl.bam ${sege}
+        samtools index sorted.segemehl.bam
+
+        filter_sam_xf_tag.py -c ${params.XF} sorted.segemehl.bam ${replicate}/bam/proc.segemehl.bam || exit \$?
         ln -s bam/proc.segemehl.bam ${replicate}/${replicate}.bam
         """
     else
         """
         mkdir ${replicate} ${replicate}/bam
         correct_sam_tlens -i ${sege} > tlens.segemehl.bam || exit \$?
-        samtools index tlens.segemehl.bam
-        filter_sam_xf_tag.py -c ${params.XF} tlens.segemehl.bam ${replicate}/bam/proc.segemehl.bam || exit \$?
+        samtools sort -o sorted.segemehl.bam tlens.segemehl.bam
+        samtools index sorted.segemehl.bam
+        
+        filter_sam_xf_tag.py -c ${params.XF} sorted.segemehl.bam ${replicate}/bam/proc.segemehl.bam || exit \$?
         ln -s bam/proc.segemehl.bam ${replicate}/${replicate}.bam
         """
 }

@@ -4,7 +4,12 @@
 
 ---
 # Prereleases
-## v0.9.0 - 2019.10.22
+
+## v0.9.1dev
+* Fix samtools merge issue with duplicated header entries
+* Fix samtools sort issue with tlens correction
+
+## v0.9.0dev - 2019.10.22
 * Major changes to Nextflow DSL2
 * Added capability to index reference genome in separate workflow
 * Added capacity for plot-bamstats with gnuplot=5.2.6

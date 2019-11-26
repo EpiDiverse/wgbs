@@ -165,7 +165,7 @@ process "fastqc" {
     script:
     """
     mkdir ${replicate} ${replicate}/fastq ${replicate}/fastq/logs
-    fastqc inputs/fastq/* -threads ${task.cpus} -outdir=${replicate}/fastq > ${replicate}/fastq/logs/fastqc.log
+    fastqc inputs/fastq/*.${params.extension} -threads ${task.cpus} -outdir=${replicate}/fastq > ${replicate}/fastq/logs/fastqc.log
     """
 
 }
@@ -564,7 +564,7 @@ process "Picard_MarkDuplicates" {
     if( !params.unique && ( params.segemehl || params.merge ))
         """
         mkdir tmp ${replicate} ${replicate}/stats ${replicate}/bam ${replicate}/bam/logs
-        picard MarkDuplicates TMP_DIR=tmp \\
+        picard -Xmx${task.memory.getBytes() - 2147483648} MarkDuplicates TMP_DIR=tmp \\
         MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=\$(ulimit -n) \\
         VALIDATION_STRINGENCY=LENIENT \\
         I=unique.bam O=marked.bam M=${replicate}/stats/duplicates.txt \\
@@ -574,7 +574,7 @@ process "Picard_MarkDuplicates" {
     else
         """
         mkdir tmp ${replicate} ${replicate}/stats ${replicate}/bam ${replicate}/bam/logs
-        picard MarkDuplicates TMP_DIR=tmp \\
+        picard -Xmx${task.memory.getBytes() - 2147483648} MarkDuplicates TMP_DIR=tmp \\
         MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=\$(ulimit -n) \\
         VALIDATION_STRINGENCY=LENIENT \\
         I=unique.bam O=${replicate}/bam/markDups.bam M=${replicate}/stats/duplicates.txt \\

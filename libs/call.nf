@@ -6,7 +6,7 @@ process "Picard_MarkDuplicates" {
     tag "$replicate - $bamtype"
 
     input:
-    tuple replicate, bamtype, path(bamfile)
+    tuple replicate, bamtype, path(bam)
     // eg. [replicate, lambda, /path/to/*.bam] or [replicate, subset, /path/to/*.bam]
 
     output:
@@ -24,7 +24,7 @@ process "Picard_MarkDuplicates" {
         picard -Xmx${task.memory.getBytes() - 2147483648} MarkDuplicates TMP_DIR=tmp \\
         MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=\$(ulimit -n) \\
         VALIDATION_STRINGENCY=LENIENT \\
-        I=unique.bam O=marked.bam M=${replicate}/stats/duplicates.txt \\
+        I=${bam} O=marked.bam M=${replicate}/stats/duplicates.txt \\
         > ${replicate}/bam/logs/markDups.${bamtype}.log 2>&1 || exit \$?
         change_sam_qname -i marked.bam -o ${replicate}/bam/markDups.bam --tags HI XB --read_name_tag XN --restore
         """
@@ -34,7 +34,7 @@ process "Picard_MarkDuplicates" {
         picard -Xmx${task.memory.getBytes() - 2147483648} MarkDuplicates TMP_DIR=tmp \\
         MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=\$(ulimit -n) \\
         VALIDATION_STRINGENCY=LENIENT \\
-        I=unique.bam O=${replicate}/bam/markDups.bam M=${replicate}/stats/duplicates.txt \\
+        I=${bam} O=${replicate}/bam/markDups.bam M=${replicate}/stats/duplicates.txt \\
         > ${replicate}/bam/logs/markDups.${bamtype}.log 2>&1
         """
 }

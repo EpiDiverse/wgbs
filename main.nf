@@ -154,28 +154,25 @@ if(params.version){
 
 
 // DECLARE INITIAL PATH VARIABLES
-if (!params.CALL) {
+if (params.INDEX || params.CALL) {
 
-    if (params.INDEX) {
+    fasta = file("${params.reference}", checkIfExists: true, glob: false)
+    fai = file("${params.reference}.fai", checkIfExists: true, glob: false)
 
+} else {
+
+    // attempt to call check_ref_errors function from libs/functions.nf if workflow.profile is epidiverse
+    if ( workflow.profile.tokenize(",").contains("epi") || workflow.profile.tokenize(",").contains("diverse") ){
+        include check_ref_errors from './libs/functions.nf' params(reference: params.reference, thlaspi: params.thlaspi, populus: params.populus, fragaria: params.fragaria, nolambda: params.noLambda)
+        (fasta, fai, ebm_path, ctidx_path, gaidx_path) = check_ref_errors(params.reference, params.thlaspi, params.fragaria, params.populus, params.noLambda)
+    }
+
+    else {
         fasta = file("${params.reference}", checkIfExists: true, glob: false)
         fai = file("${params.reference}.fai", checkIfExists: true, glob: false)
-
-    } else {
-
-        // attempt to call check_ref_errors function from libs/functions.nf if workflow.profile is epidiverse
-        if ( workflow.profile.tokenize(",").contains("epi") || workflow.profile.tokenize(",").contains("diverse") ){
-            include check_ref_errors from './libs/functions.nf' params(reference: params.reference, thlaspi: params.thlaspi, populus: params.populus, fragaria: params.fragaria, nolambda: params.noLambda)
-            (fasta, fai, ebm_path, ctidx_path, gaidx_path) = check_ref_errors(params.reference, params.thlaspi, params.fragaria, params.populus, params.noLambda)
-        }
-
-        else {
-            fasta = file("${params.reference}", checkIfExists: true, glob: false)
-            fai = file("${params.reference}.fai", checkIfExists: true, glob: false)
-            ebm_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.ebm" : "${params.reference}/lambda/*.ebm"
-            ctidx_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.ctidx" : "${params.reference}/lambda/*.ctidx"
-            gaidx_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.gaidx" : "${params.reference}/lambda/*.gaidx"
-        }
+        ebm_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.ebm" : "${params.reference}/lambda/*.ebm"
+        ctidx_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.ctidx" : "${params.reference}/lambda/*.ctidx"
+        gaidx_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.gaidx" : "${params.reference}/lambda/*.gaidx"
     }
 }
 
@@ -183,7 +180,7 @@ if (!params.CALL) {
 // establish path to reads in input and merge dirs
 reads_path = params.SE ? "${params.input}/*.${params.extension}" : "${params.input}/*{1,2}.${params.extension}"
 merge_path = params.SE ? "${params.merge}/*.${params.extension}" : "${params.merge}/*{1,2}.${params.extension}"
-bams_path = "${params.input}/*/*.bam"
+bam_path = "${params.input}/*/*.bam"
 
 // determine contexts
 if ((params.noCpG == true) && (params.noCHH == true) && (params.noCHG == true)) {error "ERROR: please specify methylation context for analysis"}
@@ -548,6 +545,7 @@ workflow {
         CALL.out.picard_markduplicates_log to: "${params.output}", mode: 'move'
         CALL.out.methyldackel_publish_svg to: "${params.output}", mode: 'move'
         CALL.out.methyldackel_log to: "${params.output}", mode: 'move'
+        CALL.out.linear_regression_publish to "${params.output}", mode: 'move'
 
 }
 

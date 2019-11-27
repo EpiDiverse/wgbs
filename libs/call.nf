@@ -51,7 +51,7 @@ process "linear_regression" {
     // eg. [/path/to/duplicates.txt, ...]
 
     output:
-    path "Duplicates.pdf"
+    path "Duplicates.*"
 
     when:
     !params.noDedup
@@ -61,7 +61,7 @@ process "linear_regression" {
     ls duplicates* | while read file; do grep -A2 "^## METRICS CLASS" \$file | 
     tail -1 | cut -f ${params.SE ? "2,6" : "3,7"} >> input.tsv; done
 
-    Rscript script.R input.tsv 
+    Rscript linearModel.R input.tsv
     """
 }
 

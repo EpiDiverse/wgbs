@@ -450,7 +450,7 @@ workflow "CALL" {
 
         // duplicate stats and conversion rate estimation
         lm = Picard_MarkDuplicates.out[1].filter{ it[1] != "lambda" }.map{ it[2] }.collect()
-        Linear_Regression(lm)
+        linear_regression(lm)
         conversion_rate_estimation(MethylDackel.out[0],chrom)
 
     emit:
@@ -462,7 +462,7 @@ workflow "CALL" {
         methyldackel_publish_svg = MethylDackel.out[1].filter{ it[1] != "lambda" }
         methyldackel_log = MethylDackel.out[2]
 
-        linear_regression_publish = Linear_Regression.out
+        linear_regression_publish = linear_regression.out
         conversion_rate_publish = conversion_rate_estimation.out
 
 }

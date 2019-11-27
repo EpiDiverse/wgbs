@@ -41,7 +41,7 @@ process "Picard_MarkDuplicates" {
 
 
 // LINEAR REGRESSION OF DUPLICATES
-process "Linear_Regression" {
+process "linear_regression" {
 
     label 'low'
     label 'ignore'

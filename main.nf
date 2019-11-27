@@ -545,7 +545,7 @@ workflow {
         CALL.out.picard_markduplicates_log to: "${params.output}", mode: 'move'
         CALL.out.methyldackel_publish_svg to: "${params.output}", mode: 'move'
         CALL.out.methyldackel_log to: "${params.output}", mode: 'move'
-        CALL.out.linear_regression_publish to "${params.output}", mode: 'move'
+        CALL.out.linear_regression_publish to: "${params.output}", mode: 'move'
 
 }
 

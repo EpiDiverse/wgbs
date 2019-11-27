@@ -58,7 +58,7 @@ if(params.help){
               --fastqc                        Generate fastqc report for sequencing reads. Report will be generated for
                                           trimmed reads if the trimming process has been enabled. [default: off]
 
-              --index                         Specify if you would like the pipeline to generate the reference genome index
+              --INDEX                         Specify if you would like the pipeline to generate the reference genome index
                                           automatically based on the options provided to the pipeline run. [default: off]
 
               --segemehl                      Enable bisulfite read alignment using only 'segemehl'. This has higher precision
@@ -152,33 +152,38 @@ if(params.version){
     exit 0
 }
 
+
 // DECLARE INITIAL PATH VARIABLES
-if (params.index) {
+if (!params.CALL) {
 
-    fasta = file("${params.reference}", checkIfExists: true, glob: false)
-    fai = file("${params.reference}.fai", checkIfExists: true, glob: false)
+    if (params.INDEX) {
 
-} else {
-
-    // attempt to call check_ref_errors function from libs/functions.nf if workflow.profile is epidiverse
-    if ( workflow.profile.tokenize(",").contains("epi") || workflow.profile.tokenize(",").contains("diverse") ){
-        include check_ref_errors from './libs/functions.nf' params(reference: params.reference, thlaspi: params.thlaspi, populus: params.populus, fragaria: params.fragaria, nolambda: params.noLambda)
-        (fasta, fai, ebm_path, ctidx_path, gaidx_path) = check_ref_errors(params.reference, params.thlaspi, params.fragaria, params.populus, params.noLambda)
-    }
-
-    else {
         fasta = file("${params.reference}", checkIfExists: true, glob: false)
         fai = file("${params.reference}.fai", checkIfExists: true, glob: false)
-        ebm_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.ebm" : "${params.reference}/lambda/*.ebm"
-        ctidx_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.ctidx" : "${params.reference}/lambda/*.ctidx"
-        gaidx_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.gaidx" : "${params.reference}/lambda/*.gaidx"
+
+    } else {
+
+        // attempt to call check_ref_errors function from libs/functions.nf if workflow.profile is epidiverse
+        if ( workflow.profile.tokenize(",").contains("epi") || workflow.profile.tokenize(",").contains("diverse") ){
+            include check_ref_errors from './libs/functions.nf' params(reference: params.reference, thlaspi: params.thlaspi, populus: params.populus, fragaria: params.fragaria, nolambda: params.noLambda)
+            (fasta, fai, ebm_path, ctidx_path, gaidx_path) = check_ref_errors(params.reference, params.thlaspi, params.fragaria, params.populus, params.noLambda)
+        }
+
+        else {
+            fasta = file("${params.reference}", checkIfExists: true, glob: false)
+            fai = file("${params.reference}.fai", checkIfExists: true, glob: false)
+            ebm_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.ebm" : "${params.reference}/lambda/*.ebm"
+            ctidx_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.ctidx" : "${params.reference}/lambda/*.ctidx"
+            gaidx_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.gaidx" : "${params.reference}/lambda/*.gaidx"
+        }
     }
 }
+
 
 // establish path to reads in input and merge dirs
 reads_path = params.SE ? "${params.input}/*.${params.extension}" : "${params.input}/*{1,2}.${params.extension}"
 merge_path = params.SE ? "${params.merge}/*.${params.extension}" : "${params.merge}/*{1,2}.${params.extension}"
-
+bams_path = "${params.input}/*/*.bam"
 
 // determine contexts
 if ((params.noCpG == true) && (params.noCHH == true) && (params.noCHG == true)) {error "ERROR: please specify methylation context for analysis"}
@@ -195,54 +200,76 @@ else {context = "--CHH --CHG "}
 lamfa = file("${params.split}", checkIfExists: true, glob: false)
 lai = file("${params.split}.fai", checkIfExists: true, glob: false)
 
-ebm = params.index ? Channel.empty() : file("${ebm_path}", checkIfExists: true)
-ctidx = params.index ? Channel.empty() : file("${ctidx_path}", checkIfExists: true)
-gaidx = params.index ? Channel.empty() : file("${gaidx_path}", checkIfExists: true)
+ebm = params.INDEX || params.CALL ? Channel.empty() : file("${ebm_path}", checkIfExists: true)
+ctidx = params.INDEX || params.CALL ? Channel.empty() : file("${ctidx_path}", checkIfExists: true)
+gaidx = params.INDEX || params.CALL ? Channel.empty() : file("${gaidx_path}", checkIfExists: true)
 
 // determine scaffold name of spike-in
 chrom = lamfa.withReader{ it.readLine() }.tokenize(' ').get(0).substring(1)
 
+// PRINT LOGGING INFO
+if params.CALL {
 
+    // PRINT SECONDARY LOGGING INFO
+    log.info ""
+    log.info "         ================================================="
+    log.info "          E P I D I V E R S E - W G B S   P I P E L I N E"
+    if(params.debug){
+    log.info "         (debug mode enabled)"
+    log.info "         =================================================" }
+    else {
+    log.info "         =================================================" }
+    log.info "         ~ version ${workflow.manifest.version}"
+    log.info ""
+    log.info "         input dir      : ${params.input}"
+    log.info "         output dir     : ${params.output}"
+    log.info "         PCR dups       : ${params.noDedup ? "ignore" : "filter" }"
+    log.info "         context(s)     : ${params.noCpG ? "" : "CpG " }${params.noCHH ? "" : "CHH " }${params.noCHG ? "" : "CHG" }"
+    log.info "         chrom          : ${params.chrom ? "${params.chrom} " : "-" }"
+    log.info ""
 
-// PRINT STANDARD LOGGING INFO
-log.info ""
-log.info "         ================================================="
-log.info "          E P I D I V E R S E - W G B S   P I P E L I N E"
-if(params.debug){
-log.info "         (debug mode enabled)"
-log.info "         =================================================" }
-else {
-log.info "         =================================================" }
-log.info "         ~ version ${workflow.manifest.version}"
-log.info ""
-log.info "         reference      : ${fasta.baseName}"
-log.info "         input dir      : ${params.input}"
-log.info "         ${params.merge ? "merge dir      : $params.merge\n" : "" }output dir     : ${params.output}"
-log.info "         extension      : *.${params.extension}"
-log.info "         read type      : ${params.SE ? "single-end" : "paired-end (min: $params.minIns max: $params.maxIns)" }"
-log.info "         read trimming  : ${params.trim ? 'enable' : 'disable' }"
-log.info "         fastqc report  : ${params.fastqc ? 'enable' : 'disable' }"
-log.info "         mapping tool   : ${params.merge ? "combined" : params.segemehl ? "segemehl" : "erne-bs5"}"
-log.info "         multimappings  : ${params.unique ? "exclude" : "include" }"
-log.info "         PCR dups       : ${params.noDedup ? "ignore" : "filter" }"
-log.info "         XF filter      : ${params.XF}"
-log.info "         conv.rate est. : ${params.chrom ? "${params.chrom} " : "" }${params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "" : "${chrom}" }"
-log.info "         context(s)     : ${params.noCpG ? "" : "CpG " }${params.noCHH ? "" : "CHH " }${params.noCHG ? "" : "CHG" }"
-log.info ""
+} else {
 
-// PRINT ADDITIONAL LOGGING INFO
-if(params.trim){
-log.info "         ================================================="
-log.info "         trimming options"
-log.info "         ================================================="
-log.info "         forward adptr  : ${params.forward}"
-log.info "         reverse adptr  : ${params.reverse}"
-log.info "         hard clip 5\'   : ${!params.clip5 ? "disabled" : "$params.clip5 bases" }"
-log.info "         hard clip 3\'   : ${!params.clip3 ? 'disabled' : "$params.clip3 bases" }"
-log.info "         min. quality   : ${params.minQual}"
-log.info "         min. length    : ${params.minLeng}"
-log.info "         min. overlap   : ${params.minOver}"
-log.info ""
+    // PRINT PRIMARY LOGGING INFO
+    log.info ""
+    log.info "         ================================================="
+    log.info "          E P I D I V E R S E - W G B S   P I P E L I N E"
+    if(params.debug){
+    log.info "         (debug mode enabled)"
+    log.info "         =================================================" }
+    else {
+    log.info "         =================================================" }
+    log.info "         ~ version ${workflow.manifest.version}"
+    log.info ""
+    log.info "         reference      : ${fasta.baseName}"
+    log.info "         input dir      : ${params.input}"
+    log.info "         ${params.merge ? "merge dir      : $params.merge\n" : "" }output dir     : ${params.output}"
+    log.info "         extension      : *.${params.extension}"
+    log.info "         read type      : ${params.SE ? "single-end" : "paired-end (min: $params.minIns max: $params.maxIns)" }"
+    log.info "         read trimming  : ${params.trim ? 'enable' : 'disable' }"
+    log.info "         fastqc report  : ${params.fastqc ? 'enable' : 'disable' }"
+    log.info "         mapping tool   : ${params.merge ? "combined" : params.segemehl ? "segemehl" : "erne-bs5"}"
+    log.info "         multimappings  : ${params.unique ? "exclude" : "include" }"
+    log.info "         PCR dups       : ${params.noDedup ? "ignore" : "filter" }"
+    log.info "         XF filter      : ${params.XF}"
+    log.info "         conv.rate est. : ${params.chrom ? "${params.chrom} " : "" }${params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "" : "${chrom}" }"
+    log.info "         context(s)     : ${params.noCpG ? "" : "CpG " }${params.noCHH ? "" : "CHH " }${params.noCHG ? "" : "CHG" }"
+    log.info ""
+
+    // PRINT ADDITIONAL LOGGING INFO
+    if(params.trim){
+    log.info "         ================================================="
+    log.info "         trimming options"
+    log.info "         ================================================="
+    log.info "         forward adptr  : ${params.forward}"
+    log.info "         reverse adptr  : ${params.reverse}"
+    log.info "         hard clip 5\'   : ${!params.clip5 ? "disabled" : "$params.clip5 bases" }"
+    log.info "         hard clip 3\'   : ${!params.clip3 ? 'disabled' : "$params.clip3 bases" }"
+    log.info "         min. quality   : ${params.minQual}"
+    log.info "         min. length    : ${params.minLeng}"
+    log.info "         min. overlap   : ${params.minOver}"
+    log.info ""
+    }
 }
 
 log.info "         ================================================"
@@ -255,32 +282,45 @@ log.info ""
 // COMMON CHANNELS //
 /////////////////////
 
-// attempt to call check_test_data function from libs/functions.nf if workflow.profile contains test
-if ( workflow.profile.tokenize(",").contains("test") ){
+// CALL workflow takes priority over -profile test
+if ( params.CALL ){
 
-        include check_test_data from './libs/functions.nf' params(readPaths: params.readPaths, mergePaths: params.mergePaths, singleEnd: params.SE, merge: params.merge)
-        (reads, merged) = check_test_data(params.readPaths, params.mergePaths, params.SE, params.merge)
+    // STAGE BAM CHANNEL
+    bam = Channel.
+        .fromFilePairs(bam_path, size: 1)
+        .ifEmpty{ exit 1, "ERROR: cannot find valid BAM files in dir: ${params.input}\n \
+        Did you mean to specify the --CALL option?"}
+        .map {tuple(it[0], "subset", it[1].flatten())}
 
 } else {
 
-// STAGE READS INPUT CHANNEL
-reads = Channel
-    .fromFilePairs(reads_path, size: params.SE ? 1 : 2)
-    .ifEmpty{ exit 1, "ERROR: cannot find valid read files in dir: ${params.input}\n \
-    The pipeline will expect PE reads in compressed *{1,2}.${params.extension} format\n \
-    unless you have specified the --SE parameter or a different extension using --extension"}
-    .take(params.take.toInteger())
+    // attempt to call check_test_data function from libs/functions.nf if workflow.profile contains test
+    if ( workflow.profile.tokenize(",").contains("test") ){
 
-//STAGE READS MERGE CHANNEL
-merged = !params.merge ? Channel.empty() :
-Channel
-    .fromFilePairs(merge_path, size: params.SE ? 1 : 2)
-    .ifEmpty{ exit 1, "ERROR: cannot find valid read files in dir: ${params.merge}\n \
-    The pipeline will expect PE reads in compressed *{1,2}.${params.extension} format\n \
-    unless you have specified the --SE parameter or a different extension using --extension"}
-    .take(params.take.toInteger())
+        include check_test_data from './libs/functions.nf' params(readPaths: params.readPaths, mergePaths: params.mergePaths, singleEnd: params.SE, merge: params.merge)
+        (reads, merged) = check_test_data(params.readPaths, params.mergePaths, params.SE, params.merge)
+        
+    } else { 
 
+        // STAGE READS INPUT CHANNEL
+        reads = Channel
+            .fromFilePairs(reads_path, size: params.SE ? 1 : 2)
+            .ifEmpty{ exit 1, "ERROR: cannot find valid read files in dir: ${params.input}\n \
+            The pipeline will expect PE reads in compressed *{1,2}.${params.extension} format\n \
+            unless you have specified the --SE parameter or a different extension using --extension"}
+            .take(params.take.toInteger())
+
+        //STAGE READS MERGE CHANNEL
+        merged = !params.merge ? Channel.empty() :
+        Channel
+            .fromFilePairs(merge_path, size: params.SE ? 1 : 2)
+            .ifEmpty{ exit 1, "ERROR: cannot find valid read files in dir: ${params.merge}\n \
+            The pipeline will expect PE reads in compressed *{1,2}.${params.extension} format\n \
+            unless you have specified the --SE parameter or a different extension using --extension"}
+            .take(params.take.toInteger())
+    }
 }
+
 
 ////////////////////
 // BEGIN PIPELINE //
@@ -290,6 +330,7 @@ Channel
 // INCLUDES
 include './libs/index.nf' params(params)
 include './libs/wgbs.nf' params(params)
+include './libs/call.nf' params(params)
 
 
 // WORKFLOWS
@@ -313,7 +354,6 @@ workflow 'INDEX' {
         gaidx = segemehl_indexing.out[1]
 }
 
-
 // WGBS workflow - primary pipeline
 workflow 'WGBS' {
 
@@ -328,7 +368,6 @@ workflow 'WGBS' {
         lamfa
         lai
         chrom
-        context
  
     main:
         // initial staging of inputs
@@ -358,19 +397,12 @@ workflow 'WGBS' {
         // alignment merging and subsetting
         bam_merging(erne_bs5_processing.out[0].combine(segemehl_processing.out[0], by: 0))
         params.merge ? bam_subsetting(bam_merging.out[0],fai,lai,chrom) : bam_subsetting(erne_bs5_processing.out[0].mix(segemehl_processing.out[0]),fai,lai,chrom)
+        !params.noLambda || params.split != "${baseDir}/data/lambda.fa" ? bam_processing(bam_subsetting.out[0].mix(bam_subsetting.out[1])) : params.merge ?\
+        bam_processing(bam_merging.out[0]) : bam_processing(erne_bs5_processing.out[0].mix(segemehl_processing.out[0]))
 
         // alignment statistics
         !params.noLambda || params.split != "${baseDir}/data/lambda.fa" ? bam_statistics(bam_subsetting.out[1]) : params.merge ?\
         bam_statistics(bam_merging.out[0]) : bam_statistics(erne_bs5_processing.out[0].mix(segemehl_processing.out[0]))
-
-        // deduplication and methylation calling
-        !params.noLambda || params.split != "${baseDir}/data/lambda.fa" ? bam_processing(bam_subsetting.out[0].mix(bam_subsetting.out[1])) : params.merge ?\
-        bam_processing(bam_merging.out[0]) : bam_processing(erne_bs5_processing.out[0].mix(segemehl_processing.out[0]))
-        Picard_MarkDuplicates(bam_processing.out)
-        params.noDedup ? MethylDackel(bam_processing.out,fasta,lamfa,context) : MethylDackel(Picard_MarkDuplicates.out[0],fasta,lamfa,context)
-
-        // conversion rate estimation
-        conversion_rate_estimation(MethylDackel.out[0],chrom)
 
     emit:
         read_trimming_publish = read_trimming.out[1]
@@ -398,7 +430,29 @@ workflow 'WGBS' {
         bam_processing_publish = bam_processing.out[0].filter{ it[1] != "lambda" }
         bam_statistics_publish_sts = bam_statistics.out[0]
         bam_statistics_publish_png = bam_statistics.out[1]
-        
+}
+
+// CALL workflow - secondary pipeline for Methylation Quantification
+workflow "CALL" {
+
+    get:
+        bam
+        fasta
+        lamfa
+        context
+        chrom
+
+    main:
+        // deduplication and methylation calling
+        Picard_MarkDuplicates(bam)
+        params.noDedup ? MethylDackel(bam,fasta,lamfa,context) : MethylDackel(Picard_MarkDuplicates.out[0],fasta,lamfa,context)
+
+        // duplicate stats and conversion rate estimation
+        lm = Picard_MarkDuplicates.out[1].filter{ it[1] != "lambda" }.map{ it[2] }.collect()
+        Linear_Regression(lm)
+        conversion_rate_estimation(MethylDackel.out[0],chrom)
+
+    emit:
         picard_markduplicates_publish_bam = Picard_MarkDuplicates.out[0].filter{ it[1] != "lambda" }
         picard_markduplicates_publish_sts = Picard_MarkDuplicates.out[1].filter{ it[1] != "lambda" }
         picard_markduplicates_log = Picard_MarkDuplicates.out[2]
@@ -406,7 +460,10 @@ workflow 'WGBS' {
         methyldackel_publish_bed = MethylDackel.out[0].filter{ it[1] != "lambda" }
         methyldackel_publish_svg = MethylDackel.out[1].filter{ it[1] != "lambda" }
         methyldackel_log = MethylDackel.out[2]
+
+        linear_regression_publish = Linear_Regression.out
         conversion_rate_publish = conversion_rate_estimation.out
+
 }
 
 
@@ -414,21 +471,35 @@ workflow 'WGBS' {
 workflow {
 
     main:
-        if(params.index) {
-            INDEX(fasta,fai,lamfa,lai)
-            WGBS(reads,merged,INDEX.out.ebm,INDEX.out.ctidx,INDEX.out.gaidx,fasta,fai,lamfa,lai,chrom,context)
-        }
-        else {
+        if(params.CALL) {
+
             INDEX(Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty())
-            WGBS(reads,merged,ebm,ctidx,gaidx,fasta,fai,lamfa,lai,chrom,context)
+            WGBS(Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty())
+            CALL(bam,fasta,lamfa,context,chrom)
+
+        } else {
+
+            if(params.INDEX) {
+
+                INDEX(fasta,fai,lamfa,lai)
+                WGBS(reads,merged,INDEX.out.ebm,INDEX.out.ctidx,INDEX.out.gaidx,fasta,fai,lamfa,lai,chrom)
+                CALL(WGBS.out.bam_processing,fasta,lamfa,context,chrom)
+
+            } else {
+
+                INDEX(Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty())
+                WGBS(reads,merged,ebm,ctidx,gaidx,fasta,fai,lamfa,lai,chrom)
+                CALL(WGBS.out.bam_processing,fasta,lamfa,context,chrom)
+            }
         }
-        WGBS.out.conversion_rate_publish.collectFile().subscribe{ it.copyTo("${params.output}/${it.baseName}/stats/BisNonConvRate.txt") }
+
+        CALL.out.conversion_rate_publish.collectFile().subscribe{ it.copyTo("${params.output}/${it.baseName}/stats/BisNonConvRate.txt") }
 
     publish:
         // Reference index
-        INDEX.out.ebm to: "${params.output}", mode: 'copy', enabled: params.index ? true : false
-        INDEX.out.ctidx to: "${params.output}", mode: 'copy', enabled: params.index ? true : false
-        INDEX.out.gaidx to: "${params.output}", mode: 'copy', enabled: params.index ? true : false
+        INDEX.out.ebm to: "${params.output}", mode: 'copy', enabled: params.INDEX ? true : false
+        INDEX.out.ctidx to: "${params.output}", mode: 'copy', enabled: params.INDEX ? true : false
+        INDEX.out.gaidx to: "${params.output}", mode: 'copy', enabled: params.INDEX ? true : false
         
         // Initial processing and alignment
         WGBS.out.read_trimming_publish to: "${params.output}", mode: 'copy', enabled: params.keepReads && !params.merge ? true : false
@@ -454,11 +525,11 @@ workflow {
         WGBS.out.bam_subsetting_publish_lambda to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
         WGBS.out.bam_subsetting_publish_subset to: "${params.output}", mode: 'copy', enabled: true
         WGBS.out.bam_subsetting_link to: "${params.output}", mode: 'copyNoFollow', enabled: true
+        WGBS.out.bam_processing_publish to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
 
         // Deduplication and Methylation Calling
-        WGBS.out.bam_processing_publish to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
-        WGBS.out.picard_markduplicates_publish_bam to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
-        WGBS.out.methyldackel_publish_bed to: "${params.output}", mode: 'copy'
+        CALL.out.picard_markduplicates_publish_bam to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
+        CALL.out.methyldackel_publish_bed to: "${params.output}", mode: 'copy'
 
         // Reports, statistics and logs
         WGBS.out.read_trimming_log to: "${params.output}", mode: 'move'
@@ -468,10 +539,10 @@ workflow {
         WGBS.out.segemehl_log to: "${params.output}", mode: 'move'
         WGBS.out.bam_statistics_publish_sts to: "${params.output}", mode: 'move'
         WGBS.out.bam_statistics_publish_png to: "${params.output}", mode: 'move'
-        WGBS.out.picard_markduplicates_publish_sts to: "${params.output}", mode: 'move'
-        WGBS.out.picard_markduplicates_log to: "${params.output}", mode: 'move'
-        WGBS.out.methyldackel_publish_svg to: "${params.output}", mode: 'move'
-        WGBS.out.methyldackel_log to: "${params.output}", mode: 'move'
+        CALL.out.picard_markduplicates_publish_sts to: "${params.output}", mode: 'move'
+        CALL.out.picard_markduplicates_log to: "${params.output}", mode: 'move'
+        CALL.out.methyldackel_publish_svg to: "${params.output}", mode: 'move'
+        CALL.out.methyldackel_log to: "${params.output}", mode: 'move'
 
 }
 
@@ -479,7 +550,6 @@ workflow {
 //////////////////
 // END PIPELINE //
 //////////////////
-
 
 
 // WORKFLOW TRACING

@@ -286,7 +286,7 @@ log.info ""
 if ( params.CALL ){
 
     // STAGE BAM CHANNEL
-    bam = Channel.
+    bam = Channel
         .fromFilePairs(bam_path, size: 1)
         .ifEmpty{ exit 1, "ERROR: cannot find valid BAM files in dir: ${params.input}\n \
         Did you mean to specify the --CALL option?"}

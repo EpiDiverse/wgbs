@@ -114,7 +114,7 @@ process "MethylDackel" {
     if( !params.unique && !params.noDedup && ( params.segemehl || params.merge ))
         """
         mkdir ${replicate} ${replicate}/stats ${replicate}/bedGraph ${replicate}/bedGraph/logs
-        BAM=\$(ls *.bam | grep -E)
+        BAM=\$(ls *.bam)
         change_sam_qname -i \$BAM -o restored.bam --tags HI XB --read_name_tag XN || exit \$?
         samtools index restored.bam
 

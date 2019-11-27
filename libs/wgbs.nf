@@ -522,19 +522,15 @@ process "bam_processing" {
     // eg. [replicate, subset, /path/to/replicate/*.bam]
     
     script:
-    if( !params.unique && ( params.segemehl || params.merge ))
+    if (params.unique)
         """
         mkdir ${replicate} ${replicate}/bam
         change_sam_qname -i ${bamfile} -o ${replicate}/bam/unique.bam --tags HI XB --read_name_tag XN
-        """   
-    else if( !params.unique && !params.segemehl && !params.merge )
-        """
-        mkdir ${replicate} ${replicate}/bam
-        cp ${bamfile} ${replicate}/bam/unique.bam
         """
     else
         """
         mkdir ${replicate} ${replicate}/bam
-        filter_sam_uniqs.py ${bamfile} ${replicate}/bam/unique.bam ${replicate}/bam/multimapped.bam
+        filter_sam_uniqs.py ${bamfile} filtered.bam ${replicate}/bam/multimapped.bam
+        change_sam_qname -i filtered.bam -o ${replicate}/bam/unique.bam --tags HI XB --read_name_tag XN
         """
 }

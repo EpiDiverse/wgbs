@@ -43,25 +43,15 @@ process "Picard_MarkDuplicates" {
     !params.noDedup
 
     script:
-    if( !params.unique && ( params.segemehl || params.merge ))
-        """
-        mkdir tmp ${replicate} ${replicate}/stats ${replicate}/bam ${replicate}/bam/logs
-        picard -Xmx${task.memory.getBytes() - 2147483648} MarkDuplicates TMP_DIR=tmp \\
-        MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=\$(ulimit -n) \\
-        VALIDATION_STRINGENCY=LENIENT \\
-        I=${bam} O=marked.bam M=${replicate}/stats/duplicates.txt \\
-        > ${replicate}/bam/logs/markDups.${bamtype}.log 2>&1 || exit \$?
-        change_sam_qname -i marked.bam -o ${replicate}/bam/markDups.bam --tags HI XB --read_name_tag XN --restore
-        """
-    else
-        """
-        mkdir tmp ${replicate} ${replicate}/stats ${replicate}/bam ${replicate}/bam/logs
-        picard -Xmx${task.memory.getBytes() - 2147483648} MarkDuplicates TMP_DIR=tmp \\
-        MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=\$(ulimit -n) \\
-        VALIDATION_STRINGENCY=LENIENT \\
-        I=${bam} O=${replicate}/bam/markDups.bam M=${replicate}/stats/duplicates.txt \\
-        > ${replicate}/bam/logs/markDups.${bamtype}.log 2>&1
-        """
+    """
+    mkdir tmp ${replicate} ${replicate}/stats ${replicate}/bam ${replicate}/bam/logs
+    picard -Xmx${task.memory.getBytes() - 2147483648} MarkDuplicates TMP_DIR=tmp \\
+    MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=\$(ulimit -n) \\
+    VALIDATION_STRINGENCY=LENIENT \\
+    I=${bam} O=marked.bam M=${replicate}/stats/duplicates.txt \\
+    > ${replicate}/bam/logs/markDups.${bamtype}.log 2>&1 || exit \$?
+    change_sam_qname -i marked.bam -o ${replicate}/bam/markDups.bam --tags HI XB --read_name_tag XN --restore
+    """
 }
 
 
@@ -86,7 +76,7 @@ process "linear_regression" {
     ls duplicates* | while read file; do grep -A2 "^## METRICS CLASS" \$file | 
     tail -1 | cut -f ${params.SE ? "2,6" : "3,7"} >> input.tsv; done
 
-    Rscript linearModel.R input.tsv
+    Rscript ${baseDir}/bin/linearModel.R input.tsv
     """
 }
 

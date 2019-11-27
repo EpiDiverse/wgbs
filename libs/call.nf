@@ -89,7 +89,7 @@ process "MethylDackel" {
     if( !params.unique && !params.noDedup && ( params.segemehl || params.merge ))
         """
         mkdir ${replicate} ${replicate}/stats ${replicate}/bedGraph ${replicate}/bedGraph/logs
-        BAM=\$(ls *.bam | grep -E "markDups|unique")
+        BAM=\$(ls *.bam | grep -E)
         change_sam_qname -i \$BAM -o restored.bam --tags HI XB --read_name_tag XN || exit \$?
         samtools index restored.bam
 
@@ -101,7 +101,7 @@ process "MethylDackel" {
     else
         """
         mkdir ${replicate} ${replicate}/stats ${replicate}/bedGraph ${replicate}/bedGraph/logs
-        BAM=\$(ls *.bam | grep -E "markDups|unique")
+        BAM=\$(ls *.bam)
         samtools index \$BAM
 
         STR=\$(echo \$(MethylDackel mbias ${bamtype == "lambda" ? "${lamfa}" : "${fasta}"} \$BAM ${replicate}/stats/Mbias ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"} 2>&1 | cut -d ":" -f2))

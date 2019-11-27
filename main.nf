@@ -208,13 +208,13 @@ gaidx = params.INDEX || params.CALL ? Channel.empty() : file("${gaidx_path}", ch
 chrom = lamfa.withReader{ it.readLine() }.tokenize(' ').get(0).substring(1)
 
 // PRINT LOGGING INFO
-if params.CALL {
+if (params.CALL){
 
     // PRINT SECONDARY LOGGING INFO
     log.info ""
     log.info "         ================================================="
     log.info "          E P I D I V E R S E - W G B S   P I P E L I N E"
-    if(params.debug){
+    if (params.debug){
     log.info "         (debug mode enabled)"
     log.info "         =================================================" }
     else {
@@ -257,7 +257,7 @@ if params.CALL {
     log.info ""
 
     // PRINT ADDITIONAL LOGGING INFO
-    if(params.trim){
+    if (params.trim){
     log.info "         ================================================="
     log.info "         trimming options"
     log.info "         ================================================="
@@ -471,7 +471,7 @@ workflow "CALL" {
 workflow {
 
     main:
-        if(params.CALL) {
+        if (params.CALL) {
 
             INDEX(Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty())
             WGBS(Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty())
@@ -479,7 +479,7 @@ workflow {
 
         } else {
 
-            if(params.INDEX) {
+            if (params.INDEX) {
 
                 INDEX(fasta,fai,lamfa,lai)
                 WGBS(reads,merged,INDEX.out.ebm,INDEX.out.ctidx,INDEX.out.gaidx,fasta,fai,lamfa,lai,chrom)

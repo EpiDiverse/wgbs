@@ -252,7 +252,7 @@ process "segemehl" {
         -d ${params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${fasta}" : "${fasta} ${lamfa}"} \\
         -q \$fq -o raw.segemehl.sam -I ${params.maxIns} -A ${params.minAccuracy} -s -t ${task.cpus} -F 1 -H 1 -D 1 \\
         > ${replicate}/bam/logs/raw.segemehl.log 2>&1 || exit \$?
-        samtools view -Sb raw.segemehl.sam > raw.segemehl.bam
+        samtools view -Sb raw.segemehl.sam > ${replicate}/bam/raw.segemehl.bam
         """
     else
         """
@@ -264,7 +264,7 @@ process "segemehl" {
         -d ${params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${fasta}" : "${fasta} ${lamfa}"} \\
         -q \$fq1 -p \$fq2 -o raw.segemehl.sam -I ${params.maxIns} -A ${params.minAccuracy} -s -t ${task.cpus} -F 1 -H 1 -D 1 \\
         > ${replicate}/bam/logs/raw.segemehl.log 2>&1 || exit \$?
-        samtools view -Sb raw.segemehl.sam > raw.segemehl.bam
+        samtools view -Sb raw.segemehl.sam > ${replicate}/bam/raw.segemehl.bam
         """
 
 }

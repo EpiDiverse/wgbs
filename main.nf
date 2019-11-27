@@ -234,16 +234,20 @@ if (params.CALL){
     log.info ""
     log.info "         ================================================="
     log.info "          E P I D I V E R S E - W G B S   P I P E L I N E"
-    if(params.debug){
-    log.info "         (debug mode enabled)"
-    log.info "         =================================================" }
-    else {
-    log.info "         =================================================" }
+    if (params.debug){
+        log.info "         (debug mode enabled)"
+        log.info "         ================================================="
+    } else {
+        log.info "         ================================================="
+    }
     log.info "         ~ version ${workflow.manifest.version}"
     log.info ""
     log.info "         reference      : ${fasta.baseName}"
-    log.info "         input dir      : ${params.input}"
-    log.info "         ${params.merge ? "merge dir      : $params.merge\n" : "" }output dir     : ${params.output}"
+    log.info "         input dir      : ${workflow.profile.contains("test") ? "test data" : "${params.input}"}"
+    if (params.merge){
+        log.info "         merge dir      : ${workflow.profile.contains("test") ? "test data" : "${params.merge}"}"
+    }
+    log.info "         output dir     : ${params.output}"
     log.info "         extension      : *.${params.extension}"
     log.info "         read type      : ${params.SE ? "single-end" : "paired-end (min: $params.minIns max: $params.maxIns)" }"
     log.info "         read trimming  : ${params.trim ? 'enable' : 'disable' }"

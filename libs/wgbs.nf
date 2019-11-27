@@ -516,25 +516,25 @@ process "bam_processing" {
     // eg. [replicate, subset, /path/to/bamfile.bam]
 
     output:
+    tuple replicate, bamtype, path("$replicate/bam/unique.bam")
     tuple replicate, bamtype, path("$replicate/bam/*.bam")
     // eg. [replicate, lambda, /path/to/replicate/*.bam]
+    // eg. [replicate, subset, /path/to/replicate/*.bam]
     
     script:
     if( !params.unique && ( params.segemehl || params.merge ))
         """
         mkdir ${replicate} ${replicate}/bam
-        change_sam_qname -i ${bamfile} -o unsorted.bam --tags HI XB --read_name_tag XN || exit \$?
-        samtools sort -T deleteme -o ${replicate}/bam/unique.bam unsorted.bam
+        change_sam_qname -i ${bamfile} -o ${replicate}/bam/unique.bam --tags HI XB --read_name_tag XN
         """   
     else if( !params.unique && !params.segemehl && !params.merge )
         """
         mkdir ${replicate} ${replicate}/bam
-        samtools sort -T deleteme -o ${replicate}/bam/unique.bam ${bamfile}
+        cp ${bamfile} ${replicate}/bam/unique.bam
         """
     else
         """
         mkdir ${replicate} ${replicate}/bam
-        filter_sam_uniqs.py ${bamfile} unsorted.bam ${replicate}/bam/multimapped.bam || exit \$?
-        samtools sort -T deleteme -o ${replicate}/bam/unique.bam unsorted.bam
+        filter_sam_uniqs.py ${bamfile} ${replicate}/bam/unique.bam ${replicate}/bam/multimapped.bam
         """
 }

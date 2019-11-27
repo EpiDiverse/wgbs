@@ -1,3 +1,28 @@
+// PRE-PROCESS BAMFILES READY FOR DOWNSTREAM METHYLATION EXTRACTION
+process "bam_sorting" {
+
+    label 'low'
+    label 'finish'
+    tag "$replicate - $bamtype"
+    
+    input:
+    tuple replicate, bamtype, path(bamfile)
+    // eg. [replicate, lambda, /path/to/bamfile.bam]
+    // eg. [replicate, subset, /path/to/bamfile.bam]
+
+    output:
+    tuple replicate, bamtype, path("$replicate/bam/*.bam")
+    // eg. [replicate, lambda, /path/to/replicate/*.bam]
+    // eg. [replicate, subset, /path/to/replicate/*.bam]
+    
+    script:
+    """
+    mkdir ${replicate} ${replicate}/bam
+    samtools sort -T deleteme -o ${replicate}/bam/sorted.bam ${bamfile}
+    """   
+}
+
+
 // MARK DUPLICATES (OPTIONAL)
 process "Picard_MarkDuplicates" {
 

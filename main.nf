@@ -428,8 +428,10 @@ workflow 'WGBS' {
         bam_subsetting_publish_lambda = bam_subsetting.out[0]
         bam_subsetting_publish_subset = bam_subsetting.out[1]
         bam_subsetting_link = bam_subsetting.out[2]
+
         bam_processing_out = bam_processing.out[0]
-        bam_processing_publish = bam_processing.out[0].filter{ it[1] != "lambda" }
+        bam_processing_publish = bam_processing.out[1].filter{ it[1] != "lambda" }
+
         bam_statistics_publish_sts = bam_statistics.out[0]
         bam_statistics_publish_png = bam_statistics.out[1]
 }
@@ -446,8 +448,9 @@ workflow "CALL" {
 
     main:
         // deduplication and methylation calling
-        Picard_MarkDuplicates(bam)
-        params.noDedup ? MethylDackel(bam,fasta,lamfa,context) : MethylDackel(Picard_MarkDuplicates.out[0],fasta,lamfa,context)
+        bam_sorting(bam)
+        Picard_MarkDuplicates(bam_sorting.out)
+        params.noDedup ? MethylDackel(bam_sorting.out,fasta,lamfa,context) : MethylDackel(Picard_MarkDuplicates.out[0],fasta,lamfa,context)
 
         // duplicate stats and conversion rate estimation
         lm = Picard_MarkDuplicates.out[1].filter{ it[1] != "lambda" }.map{ it[2] }.collect()

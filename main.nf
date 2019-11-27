@@ -483,13 +483,13 @@ workflow {
 
                 INDEX(fasta,fai,lamfa,lai)
                 WGBS(reads,merged,INDEX.out.ebm,INDEX.out.ctidx,INDEX.out.gaidx,fasta,fai,lamfa,lai,chrom)
-                CALL(WGBS.out.bam_processing,fasta,lamfa,context,chrom)
+                CALL(WGBS.out.bam_processing.out,fasta,lamfa,context,chrom)
 
             } else {
 
                 INDEX(Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty())
                 WGBS(reads,merged,ebm,ctidx,gaidx,fasta,fai,lamfa,lai,chrom)
-                CALL(WGBS.out.bam_processing,fasta,lamfa,context,chrom)
+                CALL(WGBS.out.bam_processing.out,fasta,lamfa,context,chrom)
             }
         }
 

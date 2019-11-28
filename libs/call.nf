@@ -7,17 +7,16 @@ process "bam_processing" {
     
     input:
     tuple replicate, bamtype, path("unsorted.bam")
-    // eg. [replicate, lambda, /path/to/bamfile.bam]
-    // eg. [replicate, subset, /path/to/bamfile.bam]
+    // eg. [replicate, lambda, /path/to/unsorted.bam]
+    // eg. [replicate, subset, /path/to/unsorted.bam]
 
     output:
     tuple replicate, bamtype, path("unique.bam")
-    // eg. [replicate, lambda, /path/to/replicate/*.bam]
-    // eg. [replicate, subset, /path/to/replicate/*.bam]
+    // eg. [replicate, lambda, /path/to/unique.bam]
+    // eg. [replicate, subset, /path/to/unique.bam]
     
     script:
     """
-    mkdir ${replicate} ${replicate}/bam
     samtools sort -T deleteme -o sorted.bam unsorted.bam
     change_sam_qname -i sorted.bam -o unique.bam --tags HI XB --read_name_tag XN
     """    
@@ -65,7 +64,7 @@ process "MethylDackel" {
     tag "$replicate - $bamtype"
 
     input:
-    tuple replicate, bamtype, path(bam), path(bai)
+    tuple replicate, bamtype, path(bam)
     // eg. [replicate, lambda, markDups.bam]
     path fasta
     path lamfa

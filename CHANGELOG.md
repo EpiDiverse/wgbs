@@ -5,6 +5,10 @@
 ---
 # Prereleases
 
+## v0.10.0dev
+* Modularised CALL workflow to allow for re-doing methylation calling
+* Added capability to perform linear regression on reads vs duplicates
+
 ## v0.9.1dev
 * Fix samtools merge issue with duplicated header entries
 * Fix samtools sort issue with tlens correction

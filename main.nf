@@ -398,8 +398,11 @@ workflow 'WGBS' {
         // alignment merging and subsetting
         bam_merging(erne_bs5_processing.out[0].combine(segemehl_processing.out[0], by: 0))
         params.merge ? bam_subsetting(bam_merging.out[0],fai,lai,chrom) : bam_subsetting(erne_bs5_processing.out[0].mix(segemehl_processing.out[0]),fai,lai,chrom)
+    
         !params.noLambda || params.split != "${baseDir}/data/lambda.fa" ? bam_processing(bam_subsetting.out[0].mix(bam_subsetting.out[1])) : params.merge ?\
         bam_processing(bam_merging.out[0]) : bam_processing(erne_bs5_processing.out[0].mix(segemehl_processing.out[0]))
+
+
 
         // alignment statistics
         !params.noLambda || params.split != "${baseDir}/data/lambda.fa" ? bam_statistics(bam_subsetting.out[1]) : params.merge ?\
@@ -428,10 +431,8 @@ workflow 'WGBS' {
         bam_subsetting_publish_lambda = bam_subsetting.out[0]
         bam_subsetting_publish_subset = bam_subsetting.out[1]
         bam_subsetting_link = bam_subsetting.out[2]
-
-        bam_processing_out = bam_processing.out[0]
-        bam_processing_publish = bam_processing.out[1].filter{ it[1] != "lambda" }
-
+        bam_filtering_out = bam_filtering.out[0]
+        bam_filtering_publish = bam_filtering.out[1].filter{ it[1] != "lambda" }
         bam_statistics_publish_sts = bam_statistics.out[0]
         bam_statistics_publish_png = bam_statistics.out[1]
 }
@@ -448,9 +449,9 @@ workflow "CALL" {
 
     main:
         // deduplication and methylation calling
-        bam_sorting(bam)
-        Picard_MarkDuplicates(bam_sorting.out)
-        params.noDedup ? MethylDackel(bam_sorting.out,fasta,lamfa,context) : MethylDackel(Picard_MarkDuplicates.out[0],fasta,lamfa,context)
+        bam_processing(bam)
+        Picard_MarkDuplicates(bam_processing.out)
+        params.noDedup ? MethylDackel(bam_processing.out,fasta,lamfa,context) : MethylDackel(Picard_MarkDuplicates.out[0],fasta,lamfa,context)
 
         // duplicate stats and conversion rate estimation
         lm = Picard_MarkDuplicates.out[1].filter{ it[1] != "lambda" }.map{ it[2] }.collect()
@@ -468,7 +469,6 @@ workflow "CALL" {
 
         linear_regression_publish = linear_regression.out
         conversion_rate_publish = conversion_rate_estimation.out
-
 }
 
 
@@ -476,29 +476,46 @@ workflow "CALL" {
 workflow {
 
     main:
+        // skip INDEX and WGBS workflow
         if (params.CALL) {
 
             INDEX(Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty())
             WGBS(Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty())
-            CALL(bam,fasta,lamfa,context,chrom)
 
         } else {
 
+            // genome index required
             if (params.INDEX) {
 
                 INDEX(fasta,fai,lamfa,lai)
                 WGBS(reads,merged,INDEX.out.ebm,INDEX.out.ctidx,INDEX.out.gaidx,fasta,fai,lamfa,lai,chrom)
-                CALL(WGBS.out.bam_processing_out,fasta,lamfa,context,chrom)
 
+            // genome index available
             } else {
 
                 INDEX(Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty())
                 WGBS(reads,merged,ebm,ctidx,gaidx,fasta,fai,lamfa,lai,chrom)
-                CALL(WGBS.out.bam_processing_out,fasta,lamfa,context,chrom)
+
+            }
+
+            // filter unique alignments
+            if (params.unique) {
+            
+                bam = WGBS.out.bam_filtering_out
+
+            // no filtering
+            } else {
+
+                !params.noLambda || params.split != "${baseDir}/data/lambda.fa" ? bam = WGBS.out.bam_subsetting_publish_lambda.mix(WGBS.out.bam_subsetting_publish_subset) : params.merge ?\
+                bam = WGBS.out.bam_merging_publish : bam = WGBS.out.erne_bs5_processing_publish.mix(WGBS.out.segemehl_processing_publish)
+
             }
         }
 
+        // CALL workflow
+        CALL(bam,fasta,lamfa,context,chrom)
         CALL.out.conversion_rate_publish.collectFile().subscribe{ it.copyTo("${params.output}/${it.baseName}/stats/BisNonConvRate.txt") }
+
 
     publish:
         // Reference index
@@ -530,7 +547,7 @@ workflow {
         WGBS.out.bam_subsetting_publish_lambda to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
         WGBS.out.bam_subsetting_publish_subset to: "${params.output}", mode: 'copy', enabled: true
         WGBS.out.bam_subsetting_link to: "${params.output}", mode: 'copyNoFollow', enabled: true
-        WGBS.out.bam_processing_publish to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
+        WGBS.out.bam_filtering_publish to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
 
         // Deduplication and Methylation Calling
         CALL.out.picard_markduplicates_publish_bam to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false

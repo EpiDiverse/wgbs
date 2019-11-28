@@ -504,7 +504,7 @@ process "bam_statistics" {
 
 
 // PRE-PROCESS BAMFILES READY FOR DOWNSTREAM METHYLATION EXTRACTION
-process "bam_processing" {
+process "bam_filtering" {
 
     label 'low'
     label 'finish'
@@ -521,16 +521,12 @@ process "bam_processing" {
     // eg. [replicate, lambda, /path/to/replicate/*.bam]
     // eg. [replicate, subset, /path/to/replicate/*.bam]
     
+    when:
+    params.unique
+
     script:
-    if (params.unique)
-        """
-        mkdir ${replicate} ${replicate}/bam
-        change_sam_qname -i ${bamfile} -o ${replicate}/bam/unique.bam --tags HI XB --read_name_tag XN
-        """
-    else
-        """
-        mkdir ${replicate} ${replicate}/bam
-        filter_sam_uniqs.py ${bamfile} filtered.bam ${replicate}/bam/multimapped.bam
-        change_sam_qname -i filtered.bam -o ${replicate}/bam/unique.bam --tags HI XB --read_name_tag XN
-        """
+    """
+    mkdir ${replicate} ${replicate}/bam
+    filter_sam_uniqs.py ${bamfile} ${replicate}/bam/unique.bam ${replicate}/bam/multimapped.bam
+    """
 }

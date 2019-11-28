@@ -398,7 +398,7 @@ workflow 'WGBS' {
         // alignment merging and subsetting
         bam_merging(erne_bs5_processing.out[0].combine(segemehl_processing.out[0], by: 0))
         params.merge ? bam_subsetting(bam_merging.out[0],fai,lai,chrom) : bam_subsetting(erne_bs5_processing.out[0].mix(segemehl_processing.out[0]),fai,lai,chrom)
-        !params.noLambda || params.split != "${baseDir}/data/lambda.fa" ? bam_filtering(bam_subsetting.out[0].mix(bam_filtering.out[1])) : params.merge ?\
+        !params.noLambda || params.split != "${baseDir}/data/lambda.fa" ? bam_filtering(bam_subsetting.out[0].mix(bam_subsetting.out[1])) : params.merge ?\
         bam_filtering(bam_merging.out[0]) : bam_filtering(erne_bs5_processing.out[0].mix(segemehl_processing.out[0]))
 
         // alignment statistics

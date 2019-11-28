@@ -433,6 +433,7 @@ workflow 'WGBS' {
         bam_subsetting_link = bam_subsetting.out[2]
         bam_filtering_out = bam_filtering.out[0]
         bam_filtering_publish = bam_filtering.out[1].filter{ it[1] != "lambda" }
+        bam_filtering_link = bam_filtering.out[2].filter{ it[1] != "lambda" }
         bam_statistics_publish_sts = bam_statistics.out[0]
         bam_statistics_publish_png = bam_statistics.out[1]
 }
@@ -506,8 +507,8 @@ workflow {
             // no filtering
             } else {
 
-                !params.noLambda || params.split != "${baseDir}/data/lambda.fa" ? bam = WGBS.out.bam_subsetting_publish_lambda.mix(WGBS.out.bam_subsetting_publish_subset) : params.merge ?\
-                bam = WGBS.out.bam_merging_publish : bam = WGBS.out.erne_bs5_processing_publish.mix(WGBS.out.segemehl_processing_publish)
+                bam = !params.noLambda || params.split != "${baseDir}/data/lambda.fa" ? WGBS.out.bam_subsetting_publish_lambda.mix(WGBS.out.bam_subsetting_publish_subset) : params.merge ?\
+                WGBS.out.bam_merging_publish : WGBS.out.erne_bs5_processing_publish.mix(WGBS.out.segemehl_processing_publish)
 
             }
         }
@@ -548,6 +549,7 @@ workflow {
         WGBS.out.bam_subsetting_publish_subset to: "${params.output}", mode: 'copy', enabled: true
         WGBS.out.bam_subsetting_link to: "${params.output}", mode: 'copyNoFollow', enabled: true
         WGBS.out.bam_filtering_publish to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
+        WGBS.out.bam_filtering_link to: "${params.output}", mode: 'copyNoFollow', enabled: true
 
         // Deduplication and Methylation Calling
         CALL.out.picard_markduplicates_publish_bam to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false

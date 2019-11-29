@@ -210,7 +210,7 @@ if (params.CALL){
     // PRINT SECONDARY LOGGING INFO
     log.info ""
     log.info "         ================================================="
-    log.info "          E P I D I V E R S E - W G B S   P I P E L I N E"
+    log.info "          E P I D I V E R S E - C A L L   P I P E L I N E"
     if (params.debug){
     log.info "         (debug mode enabled)"
     log.info "         =================================================" }
@@ -220,7 +220,7 @@ if (params.CALL){
     log.info ""
     log.info "         input dir      : ${params.input}"
     log.info "         output dir     : ${params.output}"
-    log.info "         PCR dups       : ${params.noDedup ? "ignore" : "filter" }"
+    log.info "         PCR dups       : ${params.noDedup ? "ignored" : "marked" }"
     log.info "         context(s)     : ${params.noCpG ? "" : "CpG " }${params.noCHH ? "" : "CHH " }${params.noCHG ? "" : "CHG" }"
     log.info "         chrom          : ${params.chrom ? "${params.chrom} " : "-" }"
     log.info ""
@@ -451,10 +451,10 @@ workflow "CALL" {
         Picard_MarkDuplicates(bam_processing.out)
         params.noDedup ? MethylDackel(bam_processing.out,fasta,lamfa,context) : MethylDackel(Picard_MarkDuplicates.out[0],fasta,lamfa,context)
 
-        // duplicate stats and conversion rate estimation
+        // conversion rate estimation and duplication statistics
+        conversion_rate_estimation(MethylDackel.out[0],chrom)
         lm = Picard_MarkDuplicates.out[1].filter{ it[1] != "lambda" }.map{ it[2] }.collect()
         linear_regression(lm)
-        conversion_rate_estimation(MethylDackel.out[0],chrom)
 
     emit:
         picard_markduplicates_publish_bam = Picard_MarkDuplicates.out[0].filter{ it[1] != "lambda" }
@@ -465,8 +465,8 @@ workflow "CALL" {
         methyldackel_publish_svg = MethylDackel.out[1].filter{ it[1] != "lambda" }
         methyldackel_log = MethylDackel.out[2]
 
-        linear_regression_publish = linear_regression.out
         conversion_rate_publish = conversion_rate_estimation.out
+        linear_regression_publish = linear_regression.out
 }
 
 

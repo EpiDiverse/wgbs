@@ -108,9 +108,9 @@ process "linear_regression" {
     script:
     """
     ls duplicates* | while read file; do grep -A2 "^## METRICS CLASS" \$file | 
-    tail -1 | cut -f ${params.SE ? "2,6" : "3,7"} >> input.tsv; done
+    tail -1 | cut -f ${params.SE ? "2,6" : "3,7"} >> Duplicates.tsv; done
 
-    Rscript ${baseDir}/bin/linearModel.R input.tsv
+    Rscript ${baseDir}/bin/scatterPlot.R Duplicates.tsv
     """
 }
 

@@ -6,15 +6,6 @@ args <- commandArgs(trailingOnly=T)
 data <- read.table(args[1], header=F, na.strings = "NA", comment.char='')
 colnames(data) <- c("reads","duplicates")
 
-# calculate the linear regression model
-linearModel <- lm(reads ~ duplicates, data=data)
-
-# print statistics to file
-modelSummary <- summary(linearModel)  
-sink("Duplicates.txt")
-print(modelSummary)
-sink() 
-
 # print scatter plot to file 
 pdf("Duplicates.pdf")
 

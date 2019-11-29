@@ -201,7 +201,9 @@ process "erne_bs5" {
         erne-bs5 --reference ${ebm} --query1 \$fq --fragment-size-min ${params.minIns} --fragment-size-max ${params.maxIns} \\
         ${erne_errors}--threads ${task.cpus - 2} --output unsorted.erne-bs5.bam --print-all \\
         > ${replicate}/bam/logs/raw.erne-bs5.log 2>&1 || exit \$?
-        samtools sort -o ${replicate}/bam/raw.erne-bs5.bam unsorted.erne-bs5.bam
+
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -o ${replicate}/bam/raw.erne-bs5.bam unsorted.erne-bs5.bam
         """
     else
         """
@@ -212,7 +214,9 @@ process "erne_bs5" {
         erne-bs5 --reference ${ebm} --query1 \$fq1 --query2 \$fq2 --fragment-size-min ${params.minIns} --fragment-size-max ${params.maxIns} \\
         ${erne_errors}--threads ${task.cpus - 2} --output unsorted.erne-bs5.bam --print-all \\
         > ${replicate}/bam/logs/raw.erne-bs5.log 2>&1 || exit \$?
-        samtools sort -o ${replicate}/bam/raw.erne-bs5.bam unsorted.erne-bs5.bam
+
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -o ${replicate}/bam/raw.erne-bs5.bam unsorted.erne-bs5.bam
         """
 
 }
@@ -297,7 +301,8 @@ process "erne_bs5_processing" {
         samtools index ${erne}
         correct_sam_cigar.py ${erne} corrected.erne-bs5.bam || exit \$?
     
-        samtools sort -T deleteme -o sorted.erne-bs5.bam corrected.erne-bs5.bam
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -o sorted.erne-bs5.bam corrected.erne-bs5.bam
         samtools index sorted.erne-bs5.bam
         filter_sam_erne.py -c ${params.XF} -t ${task.cpus} -T . ${fasta} sorted.erne-bs5.bam ${replicate}/bam/proc.erne-bs5.bam
         """
@@ -309,10 +314,12 @@ process "erne_bs5_processing" {
         samtools index ${erne}
         correct_sam_format.py -i ${params.maxIns} -t ${task.cpus} -T . ${erne} corrected.erne-bs5.bam || exit \$?
 
-        samtools sort -T deleteme -no unsorted.erne-bs5.bam corrected.erne-bs5.bam
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -no unsorted.erne-bs5.bam corrected.erne-bs5.bam
         correct_sam_tlens -i unsorted.erne-bs5.bam > tlens.erne-bs5.bam || exit \$?
 
-        samtools sort -T deleteme -o sorted.erne-bs5.bam tlens.erne-bs5.bam
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -o sorted.erne-bs5.bam tlens.erne-bs5.bam
         samtools index sorted.erne-bs5.bam
         filter_sam_erne.py -c ${params.XF} -t ${task.cpus} -T . ${fasta} sorted.erne-bs5.bam ${replicate}/bam/proc.erne-bs5.bam
         """
@@ -331,7 +338,8 @@ process "erne_bs5_processing" {
         samtools index ${erne}
         correct_sam_cigar.py ${erne} corrected.erne-bs5.bam || exit \$?
 
-        samtools sort -T deleteme -o sorted.erne-bs5.bam corrected.erne-bs5.bam
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -o sorted.erne-bs5.bam corrected.erne-bs5.bam
         samtools index sorted.erne-bs5.bam
         filter_sam_erne.py -c ${params.XF} -t ${task.cpus} -T . fasta.tmp sorted.erne-bs5.bam ${replicate}/bam/proc.erne-bs5.bam
         """
@@ -350,10 +358,12 @@ process "erne_bs5_processing" {
         samtools index ${erne}
         correct_sam_format.py -i ${params.maxIns} -t ${task.cpus} -T . ${erne} corrected.erne-bs5.bam || exit \$?
 
-        samtools sort -T deleteme -no unsorted.erne-bs5.bam corrected.erne-bs5.bam
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -no unsorted.erne-bs5.bam corrected.erne-bs5.bam
         correct_sam_tlens -i unsorted.erne-bs5.bam > tlens.erne-bs5.bam || exit \$?
 
-        samtools sort -T deleteme -o sorted.erne-bs5.bam tlens.erne-bs5.bam
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -o sorted.erne-bs5.bam tlens.erne-bs5.bam
         samtools index sorted.erne-bs5.bam
 
         filter_sam_erne.py -c ${params.XF} -t ${task.cpus} -T . fasta.tmp sorted.erne-bs5.bam ${replicate}/bam/proc.erne-bs5.bam
@@ -382,7 +392,8 @@ process "segemehl_processing" {
     if(params.SE)
         """
         mkdir ${replicate} ${replicate}/bam
-        samtools sort -o sorted.segemehl.bam ${sege}
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -o sorted.segemehl.bam ${sege}
         samtools index sorted.segemehl.bam
 
         filter_sam_xf_tag.py -c ${params.XF} sorted.segemehl.bam ${replicate}/bam/proc.segemehl.bam || exit \$?
@@ -392,7 +403,8 @@ process "segemehl_processing" {
         """
         mkdir ${replicate} ${replicate}/bam
         correct_sam_tlens -i ${sege} > tlens.segemehl.bam || exit \$?
-        samtools sort -o sorted.segemehl.bam tlens.segemehl.bam
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -o sorted.segemehl.bam tlens.segemehl.bam
         samtools index sorted.segemehl.bam
         
         filter_sam_xf_tag.py -c ${params.XF} sorted.segemehl.bam ${replicate}/bam/proc.segemehl.bam || exit \$?
@@ -464,7 +476,9 @@ process "bam_subsetting" {
     awk 'BEGIN {OFS="\\t"} {if((\$3=="${chrom}" && \$7=="=") || \$7=="${chrom}") \
     {if(\$2==97){\$2=73} else { if(\$2==81){\$2=89} \
     else { if(\$2==161){\$2=137} else{ if(\$2==145){\$2=153} }}}; \$7="*"; \$8=0}; {print \$0}}' |
-    samtools sort -T deleteme -o sort.bam - || exit \$?
+    
+    samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+    -o sort.bam - || exit \$?
     samtools index sort.bam
 
     # remove lambda from the header and split bams
@@ -495,7 +509,8 @@ process "bam_statistics" {
     script:
     """
     mkdir ${replicate} ${replicate}/stats ${replicate}/stats/bam
-    samtools sort -T deleteme -o sorted.bam ${bamfile}
+    samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+    -o sorted.bam ${bamfile}
     samtools stats sorted.bam > ${replicate}/stats/${replicate}.bam.stats
     plot-bamstats -p ${replicate}/stats/bam/ ${replicate}/stats/${replicate}.bam.stats
     """    

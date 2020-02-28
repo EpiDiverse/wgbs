@@ -5,6 +5,10 @@
 ---
 # Prereleases
 
+## v0.10.0dev
+* Modularised CALL workflow to allow for repeat methylation calling
+* Add scatter plot to check linearity of alignments vs duplicates
+
 ## v0.9.1dev
 * Fix samtools merge issue with duplicated header entries
 * Fix samtools sort issue with tlens correction

@@ -201,7 +201,9 @@ process "erne_bs5" {
         erne-bs5 --reference ${ebm} --query1 \$fq --fragment-size-min ${params.minIns} --fragment-size-max ${params.maxIns} \\
         ${erne_errors}--threads ${task.cpus - 2} --output unsorted.erne-bs5.bam --print-all \\
         > ${replicate}/bam/logs/raw.erne-bs5.log 2>&1 || exit \$?
-        samtools sort -o ${replicate}/bam/raw.erne-bs5.bam unsorted.erne-bs5.bam
+
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -o ${replicate}/bam/raw.erne-bs5.bam unsorted.erne-bs5.bam
         """
     else
         """
@@ -212,7 +214,9 @@ process "erne_bs5" {
         erne-bs5 --reference ${ebm} --query1 \$fq1 --query2 \$fq2 --fragment-size-min ${params.minIns} --fragment-size-max ${params.maxIns} \\
         ${erne_errors}--threads ${task.cpus - 2} --output unsorted.erne-bs5.bam --print-all \\
         > ${replicate}/bam/logs/raw.erne-bs5.log 2>&1 || exit \$?
-        samtools sort -o ${replicate}/bam/raw.erne-bs5.bam unsorted.erne-bs5.bam
+
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -o ${replicate}/bam/raw.erne-bs5.bam unsorted.erne-bs5.bam
         """
 
 }
@@ -252,7 +256,7 @@ process "segemehl" {
         -d ${params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${fasta}" : "${fasta} ${lamfa}"} \\
         -q \$fq -o raw.segemehl.sam -I ${params.maxIns} -A ${params.minAccuracy} -s -t ${task.cpus} -F 1 -H 1 -D 1 \\
         > ${replicate}/bam/logs/raw.segemehl.log 2>&1 || exit \$?
-        samtools view -Sb raw.segemehl.sam > raw.segemehl.bam
+        samtools view -Sb raw.segemehl.sam > ${replicate}/bam/raw.segemehl.bam
         """
     else
         """
@@ -264,7 +268,7 @@ process "segemehl" {
         -d ${params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${fasta}" : "${fasta} ${lamfa}"} \\
         -q \$fq1 -p \$fq2 -o raw.segemehl.sam -I ${params.maxIns} -A ${params.minAccuracy} -s -t ${task.cpus} -F 1 -H 1 -D 1 \\
         > ${replicate}/bam/logs/raw.segemehl.log 2>&1 || exit \$?
-        samtools view -Sb raw.segemehl.sam > raw.segemehl.bam
+        samtools view -Sb raw.segemehl.sam > ${replicate}/bam/raw.segemehl.bam
         """
 
 }
@@ -297,7 +301,8 @@ process "erne_bs5_processing" {
         samtools index ${erne}
         correct_sam_cigar.py ${erne} corrected.erne-bs5.bam || exit \$?
     
-        samtools sort -T deleteme -o sorted.erne-bs5.bam corrected.erne-bs5.bam
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -o sorted.erne-bs5.bam corrected.erne-bs5.bam
         samtools index sorted.erne-bs5.bam
         filter_sam_erne.py -c ${params.XF} -t ${task.cpus} -T . ${fasta} sorted.erne-bs5.bam ${replicate}/bam/proc.erne-bs5.bam
         """
@@ -309,10 +314,12 @@ process "erne_bs5_processing" {
         samtools index ${erne}
         correct_sam_format.py -i ${params.maxIns} -t ${task.cpus} -T . ${erne} corrected.erne-bs5.bam || exit \$?
 
-        samtools sort -T deleteme -no unsorted.erne-bs5.bam corrected.erne-bs5.bam
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -no unsorted.erne-bs5.bam corrected.erne-bs5.bam
         correct_sam_tlens -i unsorted.erne-bs5.bam > tlens.erne-bs5.bam || exit \$?
 
-        samtools sort -T deleteme -o sorted.erne-bs5.bam tlens.erne-bs5.bam
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -o sorted.erne-bs5.bam tlens.erne-bs5.bam
         samtools index sorted.erne-bs5.bam
         filter_sam_erne.py -c ${params.XF} -t ${task.cpus} -T . ${fasta} sorted.erne-bs5.bam ${replicate}/bam/proc.erne-bs5.bam
         """
@@ -331,7 +338,8 @@ process "erne_bs5_processing" {
         samtools index ${erne}
         correct_sam_cigar.py ${erne} corrected.erne-bs5.bam || exit \$?
 
-        samtools sort -T deleteme -o sorted.erne-bs5.bam corrected.erne-bs5.bam
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -o sorted.erne-bs5.bam corrected.erne-bs5.bam
         samtools index sorted.erne-bs5.bam
         filter_sam_erne.py -c ${params.XF} -t ${task.cpus} -T . fasta.tmp sorted.erne-bs5.bam ${replicate}/bam/proc.erne-bs5.bam
         """
@@ -350,10 +358,12 @@ process "erne_bs5_processing" {
         samtools index ${erne}
         correct_sam_format.py -i ${params.maxIns} -t ${task.cpus} -T . ${erne} corrected.erne-bs5.bam || exit \$?
 
-        samtools sort -T deleteme -no unsorted.erne-bs5.bam corrected.erne-bs5.bam
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -no unsorted.erne-bs5.bam corrected.erne-bs5.bam
         correct_sam_tlens -i unsorted.erne-bs5.bam > tlens.erne-bs5.bam || exit \$?
 
-        samtools sort -T deleteme -o sorted.erne-bs5.bam tlens.erne-bs5.bam
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -o sorted.erne-bs5.bam tlens.erne-bs5.bam
         samtools index sorted.erne-bs5.bam
 
         filter_sam_erne.py -c ${params.XF} -t ${task.cpus} -T . fasta.tmp sorted.erne-bs5.bam ${replicate}/bam/proc.erne-bs5.bam
@@ -382,7 +392,8 @@ process "segemehl_processing" {
     if(params.SE)
         """
         mkdir ${replicate} ${replicate}/bam
-        samtools sort -o sorted.segemehl.bam ${sege}
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -o sorted.segemehl.bam ${sege}
         samtools index sorted.segemehl.bam
 
         filter_sam_xf_tag.py -c ${params.XF} sorted.segemehl.bam ${replicate}/bam/proc.segemehl.bam || exit \$?
@@ -392,7 +403,8 @@ process "segemehl_processing" {
         """
         mkdir ${replicate} ${replicate}/bam
         correct_sam_tlens -i ${sege} > tlens.segemehl.bam || exit \$?
-        samtools sort -o sorted.segemehl.bam tlens.segemehl.bam
+        samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+        -o sorted.segemehl.bam tlens.segemehl.bam
         samtools index sorted.segemehl.bam
         
         filter_sam_xf_tag.py -c ${params.XF} sorted.segemehl.bam ${replicate}/bam/proc.segemehl.bam || exit \$?
@@ -464,7 +476,9 @@ process "bam_subsetting" {
     awk 'BEGIN {OFS="\\t"} {if((\$3=="${chrom}" && \$7=="=") || \$7=="${chrom}") \
     {if(\$2==97){\$2=73} else { if(\$2==81){\$2=89} \
     else { if(\$2==161){\$2=137} else{ if(\$2==145){\$2=153} }}}; \$7="*"; \$8=0}; {print \$0}}' |
-    samtools sort -T deleteme -o sort.bam - || exit \$?
+    
+    samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+    -o sort.bam - || exit \$?
     samtools index sort.bam
 
     # remove lambda from the header and split bams
@@ -495,7 +509,8 @@ process "bam_statistics" {
     script:
     """
     mkdir ${replicate} ${replicate}/stats ${replicate}/stats/bam
-    samtools sort -T deleteme -o sorted.bam ${bamfile}
+    samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
+    -o sorted.bam ${bamfile}
     samtools stats sorted.bam > ${replicate}/stats/${replicate}.bam.stats
     plot-bamstats -p ${replicate}/stats/bam/ ${replicate}/stats/${replicate}.bam.stats
     """    
@@ -504,7 +519,7 @@ process "bam_statistics" {
 
 
 // PRE-PROCESS BAMFILES READY FOR DOWNSTREAM METHYLATION EXTRACTION
-process "bam_processing" {
+process "bam_filtering" {
 
     label 'low'
     label 'finish'
@@ -516,145 +531,19 @@ process "bam_processing" {
     // eg. [replicate, subset, /path/to/bamfile.bam]
 
     output:
+    tuple replicate, bamtype, path("$replicate/bam/unique.bam")
     tuple replicate, bamtype, path("$replicate/bam/*.bam")
+    tuple replicate, bamtype, path("$replicate/*.bam")
     // eg. [replicate, lambda, /path/to/replicate/*.bam]
+    // eg. [replicate, subset, /path/to/replicate/*.bam]
     
-    script:
-    if( !params.unique && ( params.segemehl || params.merge ))
-        """
-        mkdir ${replicate} ${replicate}/bam
-        change_sam_qname -i ${bamfile} -o unsorted.bam --tags HI XB --read_name_tag XN || exit \$?
-        samtools sort -T deleteme -o ${replicate}/bam/unique.bam unsorted.bam
-        """   
-    else if( !params.unique && !params.segemehl && !params.merge )
-        """
-        mkdir ${replicate} ${replicate}/bam
-        samtools sort -T deleteme -o ${replicate}/bam/unique.bam ${bamfile}
-        """
-    else
-        """
-        mkdir ${replicate} ${replicate}/bam
-        filter_sam_uniqs.py ${bamfile} unsorted.bam ${replicate}/bam/multimapped.bam || exit \$?
-        samtools sort -T deleteme -o ${replicate}/bam/unique.bam unsorted.bam
-        """
-}
-
-
-
-// MARK DUPLICATES (OPTIONAL)
-process "Picard_MarkDuplicates" {
-
-    label 'low'
-    label 'finish'
-    tag "$replicate - $bamtype"
-
-    input:
-    tuple replicate, bamtype, path(bamfile)
-    // eg. [replicate, lambda, /path/to/*.bam] or [replicate, subset, /path/to/*.bam]
-
-    output:
-    tuple replicate, bamtype, path("$replicate/bam/markDups.bam")
-    tuple replicate, bamtype, path("$replicate/stats/duplicates.txt")
-    path "$replicate/bam/logs/*.log"
-
     when:
-    !params.noDedup
-
-    script:
-    if( !params.unique && ( params.segemehl || params.merge ))
-        """
-        mkdir tmp ${replicate} ${replicate}/stats ${replicate}/bam ${replicate}/bam/logs
-        picard -Xmx${task.memory.getBytes() - 2147483648} MarkDuplicates TMP_DIR=tmp \\
-        MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=\$(ulimit -n) \\
-        VALIDATION_STRINGENCY=LENIENT \\
-        I=unique.bam O=marked.bam M=${replicate}/stats/duplicates.txt \\
-        > ${replicate}/bam/logs/markDups.${bamtype}.log 2>&1 || exit \$?
-        change_sam_qname -i marked.bam -o ${replicate}/bam/markDups.bam --tags HI XB --read_name_tag XN --restore
-        """
-    else
-        """
-        mkdir tmp ${replicate} ${replicate}/stats ${replicate}/bam ${replicate}/bam/logs
-        picard -Xmx${task.memory.getBytes() - 2147483648} MarkDuplicates TMP_DIR=tmp \\
-        MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=\$(ulimit -n) \\
-        VALIDATION_STRINGENCY=LENIENT \\
-        I=unique.bam O=${replicate}/bam/markDups.bam M=${replicate}/stats/duplicates.txt \\
-        > ${replicate}/bam/logs/markDups.${bamtype}.log 2>&1
-        """
-}
-
-
-
-// METHYLATION CALLING USING "MethylDackel"
-process "MethylDackel" {
-
-    label 'low'
-    label 'ignore'
-    tag "$replicate - $bamtype"
-
-    input:
-    tuple replicate, bamtype, path(bamfile)
-    // eg. [replicate, lambda, markDups.bam]
-    path fasta
-    path lamfa
-    val context
-    
-    output:
-    tuple replicate, bamtype, path("$replicate/bedGraph/*.bedGraph")
-    tuple replicate, bamtype, path("$replicate/stats/*.svg")
-    path "$replicate/bedGraph/logs/*.err"
-
-    script:
-    if( !params.unique && !params.noDedup && ( params.segemehl || params.merge ))
-        """
-        mkdir ${replicate} ${replicate}/stats ${replicate}/bedGraph ${replicate}/bedGraph/logs
-        BAM=\$(ls *.bam | grep -E "markDups|unique")
-        change_sam_qname -i \$BAM -o restored.bam --tags HI XB --read_name_tag XN || exit \$?
-        samtools index restored.bam
-
-        STR=\$(echo \$(MethylDackel mbias ${bamtype == "lambda" ? "${lamfa}" : "${fasta}"} restored.bam ${replicate}/stats/Mbias ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"} 2>&1 | cut -d ":" -f2))
-        MethylDackel extract ${bamtype == "lambda" ? "${lamfa}" : "${fasta}"} \\
-        restored.bam ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"}-o ${replicate}/bedGraph/${replicate} \$STR \\
-        > ${replicate}/bedGraph/logs/${bamtype}.${replicate}.err 2>&1
-        """
-    else
-        """
-        mkdir ${replicate} ${replicate}/stats ${replicate}/bedGraph ${replicate}/bedGraph/logs
-        BAM=\$(ls *.bam | grep -E "markDups|unique")
-        samtools index \$BAM
-
-        STR=\$(echo \$(MethylDackel mbias ${bamtype == "lambda" ? "${lamfa}" : "${fasta}"} \$BAM ${replicate}/stats/Mbias ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"} 2>&1 | cut -d ":" -f2))
-        MethylDackel extract ${bamtype == "lambda" ? "${lamfa}" : "${fasta}"} \\
-        \$BAM ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"}-o ${replicate}/bedGraph/${replicate} \$STR \\
-        > ${replicate}/bedGraph/logs/${bamtype}.${replicate}.err 2>&1
-        """
-}
-
-
-
-// ESTIMATION OF CONVERSION RATE FROM LAMBDA
-process "conversion_rate_estimation" {
-
-    label 'low'
-    label 'ignore'
-    tag "$replicate - ${ bamtype == "lambda" ? "${chrom}" : "${params.chrom}" }"
-    
-    input:
-    tuple replicate, bamtype, path(bedGraph)
-    // eg. [replicate, lambda, [CpG.bedGraph, CHG.bedGraph, CHH.bedGraph]]
-    // eg. [replicate, subset, [CpG.bedGraph, CHG.bedGraph, CHH.bedGraph]]
-    // lambda bamtype will always have each context in bedGraph files
-    val chrom
-
-    output:
-    tuple replicate, path("*.txt")
-       
-    when:
-    ( bamtype == "lambda" || params.chrom )
+    params.unique
 
     script:
     """
-    echo -e "${replicate}\\t${bamtype == "lambda" ? "${chrom}" : "${params.chrom}"}\\tNon-conversion Rate (%): \\
-    \$(tail -q -n+2 ${bedGraph} | awk '\$1~/${bamtype == "lambda" ? "${chrom}" : "${params.chrom}"}/{{m += \$5}; {u += \$6}} END {t = (m+u); print (m/t)*100}')" \\
-    > ${replicate}.txt
-    """ 
+    mkdir ${replicate} ${replicate}/bam
+    ln -s bam/unique.bam ${replicate}/${replicate}.bam
+    filter_sam_uniqs.py ${bamfile} ${replicate}/bam/unique.bam ${replicate}/bam/multimapped.bam
+    """
 }

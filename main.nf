@@ -558,7 +558,7 @@ workflow {
         WGBS.out.fastqc_log to: "${params.output}", mode: 'move'
         WGBS.out.erne_bs5_log to: "${params.output}", mode: 'move'
         WGBS.out.segemehl_log to: "${params.output}", mode: 'move'
-        WGBS.out.bam_statistics_publish_sts to: "${params.output}", mode: 'move'
+        WGBS.out.bam_statistics_publish_sts to: "${params.output}", mode: 'copy'
         WGBS.out.bam_statistics_publish_png to: "${params.output}", mode: 'move'
         CALL.out.picard_markduplicates_publish_sts to: "${params.output}", mode: 'move'
         CALL.out.picard_markduplicates_log to: "${params.output}", mode: 'move'

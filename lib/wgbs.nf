@@ -126,12 +126,12 @@ process "read_merging" {
     if( params.SE )
         """
         mkdir fastq
-        cat ${reads} > fastq/${replicate}.${params.extension}
+        cat input* merge* > fastq/${replicate}.${params.extension}
         """
     else
         """
         mkdir fastq
-        echo -e "1\\n2" | xargs -I{} sh -c 'cat *\$1.${params.extension} > fastq/${replicate}_\$1.${params.extension}' -- {}
+        echo -e "1\\n2" | xargs -I{} sh -c 'cat *\$1 > fastq/${replicate}_\$1.${params.extension}' -- {}
         """
 }
 

@@ -36,7 +36,7 @@ process "Picard_MarkDuplicates" {
 
     output:
     tuple replicate, bamtype, path("$replicate/bam/markDups.bam")
-    tuple replicate, bamtype, path("$replicate/stats/duplicates.txt")
+    tuple replicate, bamtype, path("$replicate/duplicates.txt")
     path "$replicate/bam/logs/*.log"
 
     when:
@@ -44,12 +44,12 @@ process "Picard_MarkDuplicates" {
 
     script:
     """
-    mkdir tmp ${replicate} ${replicate}/stats ${replicate}/bam ${replicate}/bam/logs
+    mkdir tmp ${replicate} ${replicate}/bam ${replicate}/bam/logs
     
     picard -Xmx${task.memory.getBytes() - 2147483648} MarkDuplicates TMP_DIR=tmp \\
     MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=\$(ulimit -n) \\
     VALIDATION_STRINGENCY=LENIENT \\
-    I=${bam} O=${replicate}/bam/markDups.bam M=${replicate}/stats/duplicates.txt \\
+    I=${bam} O=${replicate}/bam/markDups.bam M=${replicate}/duplicates.txt \\
     > ${replicate}/bam/logs/markDups.${bamtype}.log 2>&1
     """
 }
@@ -71,20 +71,25 @@ process "MethylDackel" {
     val context
     
     output:
-    tuple replicate, bamtype, path("$replicate/bedGraph/*.bedGraph")
-    tuple replicate, bamtype, path("$replicate/stats/*.svg")
-    path "$replicate/bedGraph/logs/*.err"
+    tuple replicate, bamtype, path("bedGraph/*/*.bedGraph")
+    tuple replicate, bamtype, path("$replicate/*.svg")
+    path "bedGraph/logs/*.err"
 
     script:
     """
-    mkdir ${replicate} ${replicate}/stats ${replicate}/bedGraph ${replicate}/bedGraph/logs
+    mkdir logs ${replicate}
     BAM=\$(ls *.bam)
     samtools index \$BAM
 
-    STR=\$(echo \$(MethylDackel mbias ${bamtype == "lambda" ? "${lamfa}" : "${fasta}"} \$BAM ${replicate}/stats/Mbias ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"} 2>&1 | cut -d ":" -f2))
+    STR=\$(echo \$(MethylDackel mbias ${bamtype == "lambda" ? "${lamfa}" : "${fasta}"} \$BAM ${replicate}/Mbias ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"} 2>&1 | cut -d ":" -f2))
     MethylDackel extract ${bamtype == "lambda" ? "${lamfa}" : "${fasta}"} \\
-    \$BAM ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"}-o ${replicate}/bedGraph/${replicate} \$STR \\
-    > ${replicate}/bedGraph/logs/${bamtype}.${replicate}.err 2>&1
+    \$BAM ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"}-o ${replicate}/${replicate} \$STR \\
+    > bedGraph/logs/${bamtype}.${replicate}.err 2>&1
+
+    find ${replicate} -name "*.bedGraph" -type f |
+    while read file; do id=\$(basename \$file .bedGraph);
+    mkdir bedGraph/\${id##*_}; mv \$file bedGraph/\${id##*_}/${replicate}.bedGraph;
+    done
     """
 }
 

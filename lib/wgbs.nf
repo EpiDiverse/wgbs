@@ -65,18 +65,16 @@ process "read_trimming" {
     label 'low'
     label 'finish'
     tag "$replicate"
-    
-    //publishDir "$results_path/$replicate/fastqc", saveAs: { params.merge == params.input ? "${it}" : null }, mode: 'copy'
 
     input:
-    tuple replicate, readtype, path("inputs")
-    // eg. [replicate, [read1.fastq.gz, read2.fastq.gz]]
+    tuple replicate, readtype, path(reads)
+    // eg. [replicate, "input", [read1.fastq.gz, read2.fastq.gz]]
 
     output:
-    tuple replicate, readtype, path("$replicate")
-    // eg. [replicate, /path/to/replicate]
-    path "$replicate/fastq/*.${params.extension}"
-    path "$replicate/fastq/logs/*.log"
+    tuple replicate, readtype, path("fastq/*.${params.extension}")
+    // eg. [replicate, "input", /path/to/replicate]
+    path "fastq/*.${params.extension}"
+    path "fastq/logs/*.log"
 
     when:
     params.trim
@@ -84,24 +82,20 @@ process "read_trimming" {
     script:
     if( params.SE )
         """
-        fq=inputs/fastq/*.${params.extension}
-        mkdir ${replicate} ${replicate}/fastq ${replicate}/fastq/logs
-
+        mkdir fastq fastq/logs
         cutadapt -j ${task.cpus} -a ${params.forward}${cutadapt_clip5}${cutadapt_clip3} \\
         -q ${params.minQual} -m ${params.minLeng} -O ${params.minOver} \\
-        -o ${replicate}/fastq/\$(basename \$fq) \$fq \\
-        > ${replicate}/fastq/logs/${readtype}.log 2>&1
+        -o fastq/${params.merge ? "${readtype}." : ""}${replicate}.${params.extension} ${reads} \\
+        > fastq/logs/cutadapt.${readtype}.${replicate}.log 2>&1
         """
     else
         """
-        fq1=inputs/fastq/*1.${params.extension}
-        fq2=inputs/fastq/*2.${params.extension}
-        mkdir ${replicate} ${replicate}/fastq ${replicate}/fastq/logs
-
+        mkdir fastq fastq/logs
         cutadapt -j ${task.cpus} -a ${params.forward} -A ${params.reverse}${cutadapt_clip5}${cutadapt_clip3} \\
         -q ${params.minQual} -m ${params.minLeng} -O ${params.minOver} \\
-        -o ${replicate}/fastq/\$(basename \$fq1) -p ${replicate}/fastq/\$(basename \$fq2) \$fq1 \$fq2 \\
-        > ${replicate}/fastq/logs/${readtype}.log 2>&1
+        -o fastq/${params.merge ? "${readtype}." : ""}${reads[0]} \\
+        -p fastq/${params.merge ? "${readtype}." : ""}${reads[1]} ${reads} \\
+        > fastq/logs/cutadapt.${readtype}.${replicate}.log 2>&1
         """
 
 }
@@ -117,13 +111,13 @@ process "read_merging" {
     tag "$replicate"
 
     input:
-    tuple replicate, readtype, path("inputs*")
+    tuple replicate, readtype, path(reads)
     // eg. [replicate, ["input","merge"], [/path/to/input/replicate, /path/to/merge/replicate]]
 
     output:
-    tuple replicate, readtype, path("$replicate")
+    tuple replicate, readtype, path("fastq/*.${params.extension}")
     // eg. [replicate, ["input","merge"], /path/to/replicate]
-    path "$replicate/fastq/*.${params.extension}"
+    path "fastq/*.${params.extension}"
 
     when:
     (params.merge && (params.fastqc || (params.trim && params.keepReads)))
@@ -131,13 +125,13 @@ process "read_merging" {
     script:
     if( params.SE )
         """
-        mkdir ${replicate} ${replicate}/fastq
-        cat inputs*/fastq/*.${params.extension} > ${replicate}/fastq/${replicate}.${params.extension}
+        mkdir fastq
+        cat ${reads} > fastq/${replicate}.${params.extension}
         """
     else
         """
-        mkdir ${replicate} ${replicate}/fastq
-        echo -e "1\\n2" | xargs -I{} sh -c 'cat inputs*/fastq/*\$1.${params.extension} > ${replicate}/fastq/${replicate}_\$1.${params.extension}' -- {}
+        mkdir fastq
+        echo -e "1\\n2" | xargs -I{} sh -c 'cat *\$1.${params.extension} > fastq/${replicate}_\$1.${params.extension}' -- {}
         """
 }
 
@@ -151,21 +145,21 @@ process "fastqc" {
     tag "$replicate"
 
     input:
-    tuple replicate, readtype, path("inputs")
+    tuple replicate, readtype, path(reads)
     // eg. [replicate, "input", /path/to/replicate]
     // eg. [replicate, ["input","merge"], /path/to/replicate]
 
     output:
-    path "$replicate/fastq/*"
-    path "$replicate/fastq/logs/fastqc.log"
+    path "fastq/*.{html,zip}"
+    path "fastq/logs/fastqc.${replicate}.log"
 
     when:
     params.fastqc
 
     script:
     """
-    mkdir ${replicate} ${replicate}/fastq ${replicate}/fastq/logs
-    fastqc inputs/fastq/*.${params.extension} -threads ${task.cpus} -outdir=${replicate}/fastq > ${replicate}/fastq/logs/fastqc.log
+    mkdir fastq fastq/logs
+    fastqc ${reads} -threads ${task.cpus} -outdir=fastq > fastq/logs/fastqc.${replicate}.log
     """
 
 }
@@ -179,7 +173,7 @@ process "erne_bs5" {
     tag "$replicate"
 
     input:
-    tuple replicate, readtype, path("inputs")
+    tuple replicate, readtype, path(reads)
     // eg. [replicate, ["input"], /path/to/inputs]
     path ebm
 
@@ -195,10 +189,9 @@ process "erne_bs5" {
     script:
     if( params.SE )
         """
-        fq=inputs/fastq/*.${params.extension}
         mkdir ${replicate} ${replicate}/bam ${replicate}/bam/logs
 
-        erne-bs5 --reference ${ebm} --query1 \$fq --fragment-size-min ${params.minIns} --fragment-size-max ${params.maxIns} \\
+        erne-bs5 --reference ${ebm} --query1 ${reads} --fragment-size-min ${params.minIns} --fragment-size-max ${params.maxIns} \\
         ${erne_errors}--threads ${task.cpus - 2} --output unsorted.erne-bs5.bam --print-all \\
         > ${replicate}/bam/logs/raw.erne-bs5.log 2>&1 || exit \$?
 
@@ -207,11 +200,9 @@ process "erne_bs5" {
         """
     else
         """
-        fq1=inputs/fastq/*1.${params.extension}
-        fq2=inputs/fastq/*2.${params.extension}
         mkdir ${replicate} ${replicate}/bam ${replicate}/bam/logs
 
-        erne-bs5 --reference ${ebm} --query1 \$fq1 --query2 \$fq2 --fragment-size-min ${params.minIns} --fragment-size-max ${params.maxIns} \\
+        erne-bs5 --reference ${ebm} --query1 ${reads[0]} --query2 ${reads[1]} --fragment-size-min ${params.minIns} --fragment-size-max ${params.maxIns} \\
         ${erne_errors}--threads ${task.cpus - 2} --output unsorted.erne-bs5.bam --print-all \\
         > ${replicate}/bam/logs/raw.erne-bs5.log 2>&1 || exit \$?
 
@@ -230,7 +221,7 @@ process "segemehl" {
     tag "$replicate"
 
     input:
-    tuple replicate, readtype, path("inputs")
+    tuple replicate, readtype, path(reads)
     // eg. [replicate, ["input"], /path/to/inputs]
     path ctidx
     path gaidx
@@ -249,24 +240,19 @@ process "segemehl" {
     script:
     if( params.SE )
         """
-        fq=inputs/fastq/*.${params.extension}
         mkdir ${replicate} ${replicate}/bam ${replicate}/bam/logs
-
         segemehl.x -i ${ctidx} -j ${gaidx} \\
         -d ${params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${fasta}" : "${fasta} ${lamfa}"} \\
-        -q \$fq -o raw.segemehl.sam -I ${params.maxIns} -A ${params.minAccuracy} -s -t ${task.cpus} -F 1 -H 1 -D 1 \\
+        -q ${reads} -o raw.segemehl.sam -I ${params.maxIns} -A ${params.minAccuracy} -s -t ${task.cpus} -F 1 -H 1 -D 1 \\
         > ${replicate}/bam/logs/raw.segemehl.log 2>&1 || exit \$?
         samtools view -Sb raw.segemehl.sam > ${replicate}/bam/raw.segemehl.bam
         """
     else
         """
-        fq1=inputs/fastq/*1.${params.extension}
-        fq2=inputs/fastq/*2.${params.extension}
         mkdir ${replicate} ${replicate}/bam ${replicate}/bam/logs
-        
         segemehl.x -i ${ctidx} -j ${gaidx} \\
         -d ${params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${fasta}" : "${fasta} ${lamfa}"} \\
-        -q \$fq1 -p \$fq2 -o raw.segemehl.sam -I ${params.maxIns} -A ${params.minAccuracy} -s -t ${task.cpus} -F 1 -H 1 -D 1 \\
+        -q ${reads[0]} -p ${reads[1]} -o raw.segemehl.sam -I ${params.maxIns} -A ${params.minAccuracy} -s -t ${task.cpus} -F 1 -H 1 -D 1 \\
         > ${replicate}/bam/logs/raw.segemehl.log 2>&1 || exit \$?
         samtools view -Sb raw.segemehl.sam > ${replicate}/bam/raw.segemehl.bam
         """
@@ -290,13 +276,13 @@ process "erne_bs5_processing" {
     output:
     tuple replicate, val("erne-bs5"), path("$replicate/bam/proc.erne-bs5.bam")
     // eg. [replicate, /path/to/replicate]
-    path "${replicate}/${replicate}.bam"
+    path "${replicate}.bam"
     
     script:
     if (params.SE && params.noLambda && params.split == "${baseDir}/data/lambda.fa")
         """
         mkdir ${replicate} ${replicate}/bam
-        ln -s bam/proc.erne-bs5.bam ${replicate}/${replicate}.bam
+        ln -s ${replicate}/bam/proc.erne-bs5.bam ${replicate}.bam
 
         samtools index ${erne}
         correct_sam_cigar.py ${erne} corrected.erne-bs5.bam || exit \$?
@@ -309,7 +295,7 @@ process "erne_bs5_processing" {
     else if (!params.SE && params.noLambda && params.split == "${baseDir}/data/lambda.fa")
         """
         mkdir ${replicate} ${replicate}/bam
-        ln -s bam/proc.erne-bs5.bam ${replicate}/${replicate}.bam
+        ln -s ${replicate}/bam/proc.erne-bs5.bam ${replicate}.bam
 
         samtools index ${erne}
         correct_sam_format.py -i ${params.maxIns} -t ${task.cpus} -T . ${erne} corrected.erne-bs5.bam || exit \$?
@@ -326,7 +312,7 @@ process "erne_bs5_processing" {
     else if (params.SE)
         """
         mkdir ${replicate} ${replicate}/bam
-        ln -s bam/proc.erne-bs5.bam ${replicate}/${replicate}.bam
+        ln -s ${replicate}/bam/proc.erne-bs5.bam ${replicate}.bam
 
         if [ -z "\$(tail -c 1 ${fasta})" ]
         then
@@ -346,7 +332,7 @@ process "erne_bs5_processing" {
     else
         """
         mkdir ${replicate} ${replicate}/bam
-        ln -s bam/proc.erne-bs5.bam ${replicate}/${replicate}.bam
+        ln -s ${replicate}/bam/proc.erne-bs5.bam ${replicate}.bam
 
         if [ -z "\$(tail -c 1 ${fasta})" ]
         then
@@ -386,7 +372,7 @@ process "segemehl_processing" {
     output:
     tuple replicate, val("segemehl"), path("$replicate/bam/proc.segemehl.bam")
     // eg. [replicate, segemehl, /path/to/proc.segemehl.bam]
-    path "${replicate}/${replicate}.bam"
+    path "${replicate}.bam"
 
     script:
     if(params.SE)
@@ -397,7 +383,7 @@ process "segemehl_processing" {
         samtools index sorted.segemehl.bam
 
         filter_sam_xf_tag.py -c ${params.XF} sorted.segemehl.bam ${replicate}/bam/proc.segemehl.bam || exit \$?
-        ln -s bam/proc.segemehl.bam ${replicate}/${replicate}.bam
+        ln -s ${replicate}/bam/proc.segemehl.bam ${replicate}.bam
         """
     else
         """
@@ -408,7 +394,7 @@ process "segemehl_processing" {
         samtools index sorted.segemehl.bam
         
         filter_sam_xf_tag.py -c ${params.XF} sorted.segemehl.bam ${replicate}/bam/proc.segemehl.bam || exit \$?
-        ln -s bam/proc.segemehl.bam ${replicate}/${replicate}.bam
+        ln -s ${replicate}/bam/proc.segemehl.bam ${replicate}.bam
         """
 }
 
@@ -428,7 +414,7 @@ process "bam_merging" {
     output:
     tuple replicate, val("merged"), path("$replicate/bam/merged.bam")
     // eg. [replicate, merged, /path/to/replicate/replicate.bam]
-    path "${replicate}/${replicate}.bam"
+    path "${replicate}.bam"
    
     when:
     params.merge
@@ -436,7 +422,7 @@ process "bam_merging" {
     script:
     """
     mkdir ${replicate} ${replicate}/bam
-    ln -s bam/merged.bam ${replicate}/${replicate}.bam
+    ln -s ${replicate}/bam/merged.bam ${replicate}.bam
     samtools merge ${replicate}/bam/merged.bam ${erne_bs5} ${segemehl}
     """
 }
@@ -461,7 +447,7 @@ process "bam_subsetting" {
     tuple replicate, val("lambda"), path("${replicate}/bam/${chrom}.bam")
     tuple replicate, val("subset"), path("${replicate}/bam/subset.bam")
     // eg. [replicate, subset, /path/to/replicate/bam/subset.bam]
-    path "${replicate}/${replicate}.bam"
+    path "${replicate}.bam"
     
     when:
     !params.noLambda || params.split != "${baseDir}/data/lambda.fa"
@@ -469,7 +455,7 @@ process "bam_subsetting" {
     script:
     """
     mkdir ${replicate} ${replicate}/bam
-    ln -s bam/subset.bam ${replicate}/${replicate}.bam
+    ln -s ${replicate}/bam/subset.bam ${replicate}.bam
 
     # reset alignments whose mates have erroneously aligned to lambda
     samtools view -h ${bamfile} |
@@ -503,16 +489,16 @@ process "bam_statistics" {
     // eg. [replicate, bamtype, bamfile.bam]
 
     output:
-    path "${replicate}/stats/${replicate}.bam.stats"
-    path "${replicate}/stats/bam/*.png"    
+    path "${replicate}/${replicate}.bam.stats"
+    path "${replicate}/stats/*.png"    
 
     script:
     """
-    mkdir ${replicate} ${replicate}/stats ${replicate}/stats/bam
+    mkdir ${replicate} ${replicate}/stats
     samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
-    -o sorted.bam ${bamfile}
-    samtools stats sorted.bam > ${replicate}/stats/${replicate}.bam.stats
-    plot-bamstats -p ${replicate}/stats/bam/ ${replicate}/stats/${replicate}.bam.stats
+    -o sorted.bam ${bamfile} || exit \$?
+    samtools stats sorted.bam > ${replicate}/${replicate}.bam.stats || exit \$?
+    plot-bamstats -p ${replicate}/stats ${replicate}/${replicate}.bam.stats
     """    
 }
 
@@ -543,7 +529,7 @@ process "bam_filtering" {
     script:
     """
     mkdir ${replicate} ${replicate}/bam
-    ln -s bam/unique.bam ${replicate}/${replicate}.bam
+    ln -s ${replicate}/bam/unique.bam ${replicate}.bam
     filter_sam_uniqs.py ${bamfile} ${replicate}/bam/unique.bam ${replicate}/bam/multimapped.bam
     """
 }

@@ -161,9 +161,9 @@ if (params.INDEX || params.CALL) {
 
 } else {
 
-    // attempt to call check_ref_errors function from libs/functions.nf if workflow.profile is epidiverse
+    // attempt to call check_ref_errors function from lib/functions.nf if workflow.profile is epidiverse
     if ( workflow.profile.tokenize(",").contains("epi") || workflow.profile.tokenize(",").contains("diverse") ){
-        include check_ref_errors from './libs/functions.nf' params(reference: params.reference, thlaspi: params.thlaspi, populus: params.populus, fragaria: params.fragaria, nolambda: params.noLambda)
+        include check_ref_errors from './lib/functions.nf' params(reference: params.reference, thlaspi: params.thlaspi, populus: params.populus, fragaria: params.fragaria, nolambda: params.noLambda)
         (fasta, fai, ebm_path, ctidx_path, gaidx_path) = check_ref_errors(params.reference, params.thlaspi, params.fragaria, params.populus, params.noLambda)
     }
 
@@ -295,10 +295,10 @@ if ( params.CALL ){
 
 } else {
 
-    // attempt to call check_test_data function from libs/functions.nf if workflow.profile contains test
+    // attempt to call check_test_data function from lib/functions.nf if workflow.profile contains test
     if ( workflow.profile.tokenize(",").contains("test") ){
 
-        include check_test_data from './libs/functions.nf' params(readPaths: params.readPaths, mergePaths: params.mergePaths, singleEnd: params.SE, merge: params.merge)
+        include check_test_data from './lib/functions.nf' params(readPaths: params.readPaths, mergePaths: params.mergePaths, singleEnd: params.SE, merge: params.merge)
         (reads, merged) = check_test_data(params.readPaths, params.mergePaths, params.SE, params.merge)
         
     } else { 
@@ -309,6 +309,7 @@ if ( params.CALL ){
             .ifEmpty{ exit 1, "ERROR: cannot find valid read files in dir: ${params.input}\n \
             The pipeline will expect PE reads in compressed *{1,2}.${params.extension} format\n \
             unless you have specified the --SE parameter or a different extension using --extension"}
+            .map{ tuple(it[0], "input", it[1]) }
             .take(params.take.toInteger())
 
         //STAGE READS MERGE CHANNEL
@@ -318,6 +319,7 @@ if ( params.CALL ){
             .ifEmpty{ exit 1, "ERROR: cannot find valid read files in dir: ${params.merge}\n \
             The pipeline will expect PE reads in compressed *{1,2}.${params.extension} format\n \
             unless you have specified the --SE parameter or a different extension using --extension"}
+            .map{ tuple(it[0], "merge", it[1]) }
             .take(params.take.toInteger())
     }
 }
@@ -329,9 +331,9 @@ if ( params.CALL ){
 
 
 // INCLUDES
-include './libs/index.nf' params(params)
-include './libs/wgbs.nf' params(params)
-include './libs/call.nf' params(params)
+include './lib/index.nf' params(params)
+include './lib/wgbs.nf' params(params)
+include './lib/call.nf' params(params)
 
 
 // WORKFLOWS
@@ -372,24 +374,31 @@ workflow 'WGBS' {
  
     main:
         // initial staging of inputs
-        stage_input_directories(reads)
-        stage_merge_directories(merged)
+        //stage_input_directories(reads)
+        //stage_merge_directories(merged)
 
         // read trimming and merging
-        read_trimming(stage_input_directories.out.mix(stage_merge_directories.out))
-        params.trim ? read_merging(read_trimming.out[0].groupTuple()) :\
-        read_merging(stage_input_directories.out.mix(stage_merge_directories.out).groupTuple())
+        //read_trimming(stage_input_directories.out.mix(stage_merge_directories.out))
+        read_trimming(reads.mix(merged))
+        //params.trim ? read_merging(read_trimming.out[0].groupTuple()) :\
+        //read_merging(stage_input_directories.out.mix(stage_merge_directories.out).groupTuple())
+        read_merging(reads.mix(merged).groupTuple().mix(read_trimming.out[0].groupTuple())
 
         // fastqc process
+        //params.merge ? fastqc(read_merging.out[0]) :\
+        //params.trim ? fastqc(read_trimming.out[0]) : fastqc(stage_input_directories.out)
         params.merge ? fastqc(read_merging.out[0]) :\
-        params.trim ? fastqc(read_trimming.out[0]) : fastqc(stage_input_directories.out)
+        params.trim ? fastqc(read_trimming.out[0]) : fastqc(reads)
 
         // erne_bs5 process
-        params.trim ? erne_bs5(read_trimming.out[0], ebm) : erne_bs5(stage_input_directories.out, ebm)
+        //params.trim ? erne_bs5(read_trimming.out[0], ebm) : erne_bs5(stage_input_directories.out, ebm)
+        params.trim ? erne_bs5(read_trimming.out[0], ebm) : erne_bs5(reads, ebm)
 
         // segemehl process
+        //params.trim ? segemehl(read_trimming.out[0], ctidx, gaidx, fasta, lamfa) : params.merge ?\
+        //segemehl(stage_merge_directories.out, ctidx, gaidx, fasta, lamfa) : segemehl(stage_input_directories.out, ctidx, gaidx, fasta, lamfa)
         params.trim ? segemehl(read_trimming.out[0], ctidx, gaidx, fasta, lamfa) : params.merge ?\
-        segemehl(stage_merge_directories.out, ctidx, gaidx, fasta, lamfa) : segemehl(stage_input_directories.out, ctidx, gaidx, fasta, lamfa)
+        segemehl(merged, ctidx, gaidx, fasta, lamfa) : segemehl(reads, ctidx, gaidx, fasta, lamfa)
 
         // alignment post-processing
         erne_bs5_processing(erne_bs5.out[0],fasta,lamfa)
@@ -517,52 +526,52 @@ workflow {
 
     publish:
         // Reference index
-        INDEX.out.ebm to: "${params.output}", mode: 'copy', enabled: params.INDEX ? true : false
-        INDEX.out.ctidx to: "${params.output}", mode: 'copy', enabled: params.INDEX ? true : false
-        INDEX.out.gaidx to: "${params.output}", mode: 'copy', enabled: params.INDEX ? true : false
+        INDEX.out.ebm to: "${params.output}/index", mode: 'copy', enabled: params.INDEX ? true : false
+        INDEX.out.ctidx to: "${params.output}/index", mode: 'copy', enabled: params.INDEX ? true : false
+        INDEX.out.gaidx to: "${params.output}/index", mode: 'copy', enabled: params.INDEX ? true : false
         
         // Initial processing and alignment
         WGBS.out.read_trimming_publish to: "${params.output}", mode: 'copy', enabled: params.keepReads && !params.merge ? true : false
         WGBS.out.read_merging_publish to: "${params.output}", mode: 'copy', enabled: params.keepReads && params.trim ? true : false
-        WGBS.out.erne_bs5_publish to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
-        WGBS.out.segemehl_publish to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
+        WGBS.out.erne_bs5_publish to: "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
+        WGBS.out.segemehl_publish to: "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
 
         // Post-Processed BAM files
-        WGBS.out.erne_bs5_processing_publish to: "${params.output}", mode: 'copy', \
+        WGBS.out.erne_bs5_processing_publish to: "${params.output}/bam", mode: 'copy', \
             enabled: params.keepBams || (!params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
-        WGBS.out.segemehl_processing_publish to: "${params.output}", mode: 'copy', \
+        WGBS.out.segemehl_processing_publish to: "${params.output}/bam", mode: 'copy', \
             enabled: params.keepBams || (!params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
-        WGBS.out.erne_bs5_processing_link to: "${params.output}", mode: 'copyNoFollow', \
+        WGBS.out.erne_bs5_processing_link to: "${params.output}/bam", mode: 'copyNoFollow', \
             enabled: !params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? true : false
-        WGBS.out.segemehl_processing_link to: "${params.output}", mode: 'copyNoFollow', \
+        WGBS.out.segemehl_processing_link to: "${params.output}/bam", mode: 'copyNoFollow', \
             enabled: !params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? true : false
 
         // Merging and Subsetting BAM files
-        WGBS.out.bam_merging_publish to: "${params.output}", mode: 'copy', \
+        WGBS.out.bam_merging_publish to: "${params.output}/bam", mode: 'copy', \
             enabled: params.keepBams || (params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
-        WGBS.out.bam_merging_link to: "${params.output}", mode: 'copyNoFollow', \
+        WGBS.out.bam_merging_link to: "${params.output}/bam", mode: 'copyNoFollow', \
             enabled: params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? true : false
-        WGBS.out.bam_subsetting_publish_lambda to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
-        WGBS.out.bam_subsetting_publish_subset to: "${params.output}", mode: 'copy', enabled: true
-        WGBS.out.bam_subsetting_link to: "${params.output}", mode: 'copyNoFollow', enabled: true
-        WGBS.out.bam_filtering_publish to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
-        WGBS.out.bam_filtering_link to: "${params.output}", mode: 'copyNoFollow', enabled: true
+        WGBS.out.bam_subsetting_publish_lambda to: "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
+        WGBS.out.bam_subsetting_publish_subset to: "${params.output}/bam", mode: 'copy', enabled: true
+        WGBS.out.bam_subsetting_link to: "${params.output}/bam", mode: 'copyNoFollow', enabled: true
+        WGBS.out.bam_filtering_publish to: "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
+        WGBS.out.bam_filtering_link to: "${params.output}/bam", mode: 'copyNoFollow', enabled: true
 
         // Deduplication and Methylation Calling
-        CALL.out.picard_markduplicates_publish_bam to: "${params.output}", mode: 'copy', enabled: params.keepBams ? true : false
+        CALL.out.picard_markduplicates_publish_bam to: "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
         CALL.out.methyldackel_publish_bed to: "${params.output}", mode: 'copy'
 
         // Reports, statistics and logs
         WGBS.out.read_trimming_log to: "${params.output}", mode: 'move'
         WGBS.out.fastqc_publish to: "${params.output}", mode: 'move'
         WGBS.out.fastqc_log to: "${params.output}", mode: 'move'
-        WGBS.out.erne_bs5_log to: "${params.output}", mode: 'move'
-        WGBS.out.segemehl_log to: "${params.output}", mode: 'move'
-        WGBS.out.bam_statistics_publish_sts to: "${params.output}", mode: 'copy'
-        WGBS.out.bam_statistics_publish_png to: "${params.output}", mode: 'move'
-        CALL.out.picard_markduplicates_publish_sts to: "${params.output}", mode: 'move'
-        CALL.out.picard_markduplicates_log to: "${params.output}", mode: 'move'
-        CALL.out.methyldackel_publish_svg to: "${params.output}", mode: 'move'
+        WGBS.out.erne_bs5_log to: "${params.output}/bam", mode: 'move'
+        WGBS.out.segemehl_log to: "${params.output}/bam", mode: 'move'
+        WGBS.out.bam_statistics_publish_sts to: "${params.output}/bam", mode: 'copy'
+        WGBS.out.bam_statistics_publish_png to: "${params.output}/bam", mode: 'move'
+        CALL.out.picard_markduplicates_publish_sts to: "${params.output}/bam", mode: 'move'
+        CALL.out.picard_markduplicates_log to: "${params.output}/bam", mode: 'move'
+        CALL.out.methyldackel_publish_svg to: "${params.output}/bam", mode: 'move'
         CALL.out.methyldackel_log to: "${params.output}", mode: 'move'
         CALL.out.linear_regression_publish to: "${params.output}", mode: 'move'
 

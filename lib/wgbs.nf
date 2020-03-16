@@ -111,7 +111,7 @@ process "read_merging" {
     tag "$replicate"
 
     input:
-    tuple replicate, readtype, path(reads)
+    tuple replicate, readtype, path("input"), path("merge")
     // eg. [replicate, ["input","merge"], [/path/to/input/replicate, /path/to/merge/replicate]]
 
     output:

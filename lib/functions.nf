@@ -70,11 +70,11 @@ def check_test_data(readPaths,mergePaths,singleEnd,merge) {
     if( singleEnd ){
         reads = Channel
             .from(readPaths)
-            .map { row -> [ row[0], [file(row[1][0])]] }
+            .map { row -> [ row[0], row[1], [file(row[2][0])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
         merged = Channel
             .from(mergePaths)
-            .map { row -> [ row[0], [file(row[1][0])]] }
+            .map { row -> [ row[0], row[1], [file(row[2][0])]] }
             .ifEmpty { exit 1, "params.mergePaths was empty - no input files supplied" }
 
     // PAIRED END TESTDATA
@@ -82,11 +82,11 @@ def check_test_data(readPaths,mergePaths,singleEnd,merge) {
 
         reads = Channel
             .from(readPaths)
-            .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
+            .map { row -> [ row[0], row[1], [file(row[2][0]), file(row[2][1])]] }
             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
         merged = Channel
             .from(mergePaths)
-            .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
+            .map { row -> [ row[0], row[1], [file(row[2][0]), file(row[2][1])]] }
             .ifEmpty { exit 1, "params.mergePaths was empty - no input files supplied" }
     }
 

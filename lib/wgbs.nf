@@ -519,7 +519,7 @@ process "bam_filtering" {
     output:
     tuple replicate, bamtype, path("$replicate/bam/unique.bam")
     tuple replicate, bamtype, path("$replicate/bam/*.bam")
-    tuple replicate, bamtype, path("$replicate/*.bam")
+    tuple replicate, bamtype, path("${replicate}.bam")
     // eg. [replicate, lambda, /path/to/replicate/*.bam]
     // eg. [replicate, subset, /path/to/replicate/*.bam]
     

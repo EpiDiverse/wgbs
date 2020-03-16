@@ -26,7 +26,7 @@ eg. ./correct_sam_cigar.py in.bam out.bam
 ## INIT ENVIRONMENT
 
 import argparse
-import pysam
+import pysam, re
 
 ##################
 ## DEFINE __MAIN__

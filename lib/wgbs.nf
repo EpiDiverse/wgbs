@@ -498,7 +498,7 @@ process "bam_statistics" {
     samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
     -o sorted.bam ${bamfile} || exit \$?
     samtools stats sorted.bam > ${replicate}/${replicate}.bam.stats || exit \$?
-    plot-bamstats -p ${replicate}/stats ${replicate}/${replicate}.bam.stats
+    plot-bamstats -p ${replicate}/stats/ ${replicate}/${replicate}.bam.stats
     """    
 }
 

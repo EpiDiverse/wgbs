@@ -570,7 +570,7 @@ workflow {
         WGBS.out.segemehl_log to: "${params.output}/bam", mode: 'move'
         WGBS.out.bam_statistics_publish_sts to: "${params.output}/bam", mode: 'copy'
         WGBS.out.bam_statistics_publish_png to: "${params.output}/bam", mode: 'move'
-        CALL.out.picard_markduplicates_publish_sts to: "${params.output}/bam", mode: 'move'
+        CALL.out.picard_markduplicates_publish_sts to: "${params.output}/bam", mode: 'copy'
         CALL.out.picard_markduplicates_log to: "${params.output}/bam", mode: 'move'
         CALL.out.methyldackel_publish_svg to: "${params.output}/bam", mode: 'move'
         CALL.out.methyldackel_log to: "${params.output}/bedGraph", mode: 'move'

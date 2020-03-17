@@ -129,7 +129,7 @@ process "conversion_rate_estimation" {
     tag "$replicate - ${ bamtype == "lambda" ? "${chrom}" : "${params.chrom}" }"
     
     input:
-    tuple replicate, bamtype, path(bedGraph)
+    tuple replicate, bamtype, path("bedGraph")
     // eg. [replicate, lambda, [CpG.bedGraph, CHG.bedGraph, CHH.bedGraph]]
     // eg. [replicate, subset, [CpG.bedGraph, CHG.bedGraph, CHH.bedGraph]]
     // lambda bamtype will always have each context in bedGraph files
@@ -144,7 +144,7 @@ process "conversion_rate_estimation" {
     script:
     """
     echo -e "${replicate}\\t${bamtype == "lambda" ? "${chrom}" : "${params.chrom}"}\\tNon-conversion Rate (%): \\
-    \$(tail -q -n+2 ${bedGraph} | awk '\$1~/${bamtype == "lambda" ? "${chrom}" : "${params.chrom}"}/{{m += \$5}; {u += \$6}} END {t = (m+u); print (m/t)*100}')" \\
+    \$(tail -q -n+2 bedGraph* | awk '\$1~/${bamtype == "lambda" ? "${chrom}" : "${params.chrom}"}/{{m += \$5}; {u += \$6}} END {t = (m+u); print (m/t)*100}')" \\
     > ${replicate}.txt
     """ 
 }

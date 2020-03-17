@@ -72,24 +72,24 @@ process "MethylDackel" {
     val context
     
     output:
-    tuple replicate, bamtype, path("bedGraph/*/*.bedGraph")
+    tuple replicate, bamtype, path("*/*.bedGraph")
     tuple replicate, bamtype, path("$replicate/*.svg")
-    path "bedGraph/logs/*.err"
+    path "logs/*.err"
 
     script:
     """
-    mkdir logs ${replicate}
+    mkdir logs bedGraph ${replicate}
     BAM=\$(ls *.bam)
     samtools index \$BAM
 
     STR=\$(echo \$(MethylDackel mbias ${bamtype == "lambda" ? "${lamfa}" : "${fasta}"} \$BAM ${replicate}/Mbias ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"} 2>&1 | cut -d ":" -f2))
     MethylDackel extract ${bamtype == "lambda" ? "${lamfa}" : "${fasta}"} \\
     \$BAM ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"}-o ${replicate}/${replicate} \$STR \\
-    > bedGraph/logs/${bamtype}.${replicate}.err 2>&1
+    > logs/${bamtype}.${replicate}.err 2>&1
 
     find ${replicate} -name "*.bedGraph" -type f |
     while read file; do id=\$(basename \$file .bedGraph);
-    mkdir bedGraph/\${id##*_}; mv \$file bedGraph/\${id##*_}/${replicate}.bedGraph;
+    mkdir \${id##*_}; mv \$file \${id##*_}/${replicate}.bedGraph;
     done
     """
 }

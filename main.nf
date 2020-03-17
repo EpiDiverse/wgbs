@@ -560,7 +560,7 @@ workflow {
 
         // Deduplication and Methylation Calling
         CALL.out.picard_markduplicates_publish_bam to: "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
-        CALL.out.methyldackel_publish_bed to: "${params.output}", mode: 'copy'
+        CALL.out.methyldackel_publish_bed to: "${params.output}/bedGraph", mode: 'copy'
 
         // Reports, statistics and logs
         WGBS.out.read_trimming_log to: "${params.output}", mode: 'move'
@@ -573,7 +573,7 @@ workflow {
         CALL.out.picard_markduplicates_publish_sts to: "${params.output}/bam", mode: 'move'
         CALL.out.picard_markduplicates_log to: "${params.output}/bam", mode: 'move'
         CALL.out.methyldackel_publish_svg to: "${params.output}/bam", mode: 'move'
-        CALL.out.methyldackel_log to: "${params.output}", mode: 'move'
+        CALL.out.methyldackel_log to: "${params.output}/bedGraph", mode: 'move'
         CALL.out.linear_regression_publish to: "${params.output}", mode: 'move'
 
 }

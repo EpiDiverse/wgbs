@@ -522,7 +522,7 @@ workflow {
 
         // CALL workflow
         CALL(bam,fasta,lamfa,context,chrom)
-        CALL.out.conversion_rate_publish.collectFile().subscribe{ it.copyTo("${params.output}/${it.baseName}/stats/BisNonConvRate.txt") }
+        CALL.out.conversion_rate_publish.collectFile().subscribe{ it.copyTo("${params.output}/bam/${it.baseName}/stats/BisNonConvRate.txt") }
 
 
     publish:

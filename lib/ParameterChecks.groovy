@@ -19,7 +19,7 @@ class ParameterChecks {
         assert params.minIns instanceof Integer && params.minIns >= 0, "--minIns parameter must be a non-negative integer!"
         assert params.maxIns instanceof Integer && params.maxIns >= 0, "--maxIns parameter must be a non-negative integer!"
         assert params.maxErrors instanceof Integer && (params.maxErrors == -1 || params.maxErrors >= 0), "--maxErrors parameter must be a non-negative integer (or can be disabled with -1)!"
-        assert params.maxAccuracy instanceof Integer && params.maxAccuracy >= 0, "--maxAccuracy parameter must be a non-negative integer!"
+        assert params.minAccuracy instanceof Integer && params.minAccuracy >= 0, "--minAccuracy parameter must be a non-negative integer!"
         assert Double.valueOf(params.XF) >= 0.0d && Double.valueOf(params.XF) <= 1.0d, "--XF proportion must be a decimal in the range of 0 and 1!"
         assert params.take instanceof Integer && params.take > 0, "--take parameter must be a positive integer!"
         assert !params.fork || (params.fork instanceof Integer && params.fork > 0), "--fork parameter must be a positive integer!"

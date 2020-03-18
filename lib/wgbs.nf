@@ -7,57 +7,6 @@ erne_errors = params.maxErrors.toInteger() < 0 ? "--errors ${params.maxErrors} "
 
 
 
-// STAGE INPUT READS INTO DIRECTORIES
-// requires reads from params.input
-process "stage_input_directories" {
-
-    label 'tiny'
-    label 'finish'
-    tag "$replicate"
-
-    input:
-    tuple replicate, path(reads)
-
-    output:
-    tuple replicate, val("input"), path("$replicate")
-
-    script:
-    """
-    mkdir ${replicate} ${replicate}/fastq
-    cp -a *.${params.extension} ${replicate}/fastq
-    """
-
-}
-
-
-
-// STAGE MERGE READS INTO DIRECTORIES
-// requires reads from params.merge
-process "stage_merge_directories" {
-
-    label 'tiny'
-    label 'finish'
-    tag "$replicate"
-
-    input:
-    tuple replicate, path(reads)
-
-    output:
-    tuple replicate, val("merge"), path("$replicate")
-
-    when:
-    params.merge
-
-    script:
-    """
-    mkdir ${replicate} ${replicate}/fastq
-    cp -a *.${params.extension} ${replicate}/fastq
-    """
-
-}
-
-
-
 // TRIM READS WITH CUTADAPT (OPTIONAL)
 // requires build_input_directories.mix(build_merge_directories)
 process "read_trimming" {
@@ -86,7 +35,7 @@ process "read_trimming" {
         cutadapt -j ${task.cpus} -a ${params.forward}${cutadapt_clip5}${cutadapt_clip3} \\
         -q ${params.minQual} -m ${params.minLeng} -O ${params.minOver} \\
         -o fastq/${params.merge ? "${readtype}." : ""}${replicate}.${params.extension} ${reads} \\
-        > fastq/logs/cutadapt.${readtype}.${replicate}.log 2>&1
+        > fastq/logs/cutadapt.${replicate}.${readtype}.log 2>&1
         """
     else
         """
@@ -95,7 +44,7 @@ process "read_trimming" {
         -q ${params.minQual} -m ${params.minLeng} -O ${params.minOver} \\
         -o fastq/${params.merge ? "${readtype}." : ""}${reads[0]} \\
         -p fastq/${params.merge ? "${readtype}." : ""}${reads[1]} ${reads} \\
-        > fastq/logs/cutadapt.${readtype}.${replicate}.log 2>&1
+        > fastq/logs/cutadapt.${replicate}.${readtype}.log 2>&1
         """
 
 }

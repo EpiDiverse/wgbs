@@ -83,7 +83,7 @@ if(params.help){
               --noDedup                       Skip de-duplication step for downstream filtering of PCR duplicates. [default: off]
 
               --keepIndex                     Specify if you would like to keep generated index files. Can be used interchangeably
-                                          with --index to perform the same function while keeping index files. [default: off]
+                                          with --INDEX to perform the same function while keeping index files. [default: off]
 
               --keepReads                     Specify if you would like to keep processed reads eg. after trimming [default: off]
 
@@ -154,33 +154,33 @@ if(params.version){
 
 
 // DECLARE INITIAL PATH VARIABLES
-if (params.INDEX || params.CALL) {
+// attempt to call check_ref_errors function from lib/functions.nf if workflow.profile is epidiverse
+if ( workflow.profile.tokenize(",").contains("epi") || workflow.profile.tokenize(",").contains("diverse") ){
 
-    fasta = file("${params.reference}", checkIfExists: true, glob: false)
-    fai = file("${params.reference}.fai", checkIfExists: true, glob: false)
-
-} else {
-
-    // attempt to call check_ref_errors function from lib/functions.nf if workflow.profile is epidiverse
-    if ( workflow.profile.tokenize(",").contains("epi") || workflow.profile.tokenize(",").contains("diverse") ){
-        include check_ref_errors from './lib/functions.nf' params(reference: params.reference, thlaspi: params.thlaspi, populus: params.populus, fragaria: params.fragaria, nolambda: params.noLambda)
-        (fasta, fai, ebm_path, ctidx_path, gaidx_path) = check_ref_errors(params.reference, params.thlaspi, params.fragaria, params.populus, params.noLambda)
-    }
-
-    else {
-        fasta = file("${params.reference}", checkIfExists: true, glob: false)
-        fai = file("${params.reference}.fai", checkIfExists: true, glob: false)
-        ebm_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.ebm" : "${params.reference}/lambda/*.ebm"
-        ctidx_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.ctidx" : "${params.reference}/lambda/*.ctidx"
-        gaidx_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.gaidx" : "${params.reference}/lambda/*.gaidx"
-    }
+    // VALIDATE INITIAL PARAMETERS
+    ParameterChecks.checkParamsEpi(params)
+    include check_ref_errors from './lib/functions.nf' params(reference: params.reference, thlaspi: params.thlaspi, populus: params.populus, fragaria: params.fragaria, nolambda: params.noLambda)
+    (fasta, fai, ebm_path, ctidx_path, gaidx_path) = check_ref_errors(params.reference, params.thlaspi, params.fragaria, params.populus, params.noLambda)
 }
 
+else {
+
+    // VALIDATE INITIAL PARAMETERS
+    ParameterChecks.checkParamsLocal(params)
+    fasta = file("${params.reference}", checkIfExists: true, glob: false)
+    fai = file("${params.reference}.fai", checkIfExists: true, glob: false)
+    ebm_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.ebm" : "${params.reference}/lambda/*.ebm"
+    ctidx_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.ctidx" : "${params.reference}/lambda/*.ctidx"
+    gaidx_path = params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${params.reference}/index/*.gaidx" : "${params.reference}/lambda/*.gaidx"
+}
+
+// VALIDATE ALL PARAMETERS
+ParameterChecks.checkParams(params)
 
 // establish path to reads in input and merge dirs
 reads_path = params.SE ? "${params.input}/*.${params.extension}" : "${params.input}/*{1,2}.${params.extension}"
 merge_path = params.SE ? "${params.merge}/*.${params.extension}" : "${params.merge}/*{1,2}.${params.extension}"
-bam_path = "${params.input}/*/*.bam"
+bam_path = "${params.input}/*.bam"
 
 // determine contexts
 if ((params.noCpG == true) && (params.noCHH == true) && (params.noCHG == true)) {error "ERROR: please specify methylation context for analysis"}
@@ -240,9 +240,9 @@ if (params.CALL){
     log.info "         ~ version ${workflow.manifest.version}"
     log.info ""
     log.info "         reference      : ${fasta.baseName}"
-    log.info "         input dir      : ${workflow.profile.contains("test") ? "test data" : "${params.input}"}"
+    log.info "         input dir      : ${workflow.profile.contains("test") ? "test profile" : "${params.input}"}"
     if (params.merge){
-        log.info "         merge dir      : ${workflow.profile.contains("test") ? "test data" : "${params.merge}"}"
+        log.info "         merge dir      : ${workflow.profile.contains("test") ? "test profile" : "${params.merge}"}"
     }
     log.info "         output dir     : ${params.output}"
     log.info "         extension      : *.${params.extension}"
@@ -373,31 +373,19 @@ workflow 'WGBS' {
         chrom
  
     main:
-        // initial staging of inputs
-        //stage_input_directories(reads)
-        //stage_merge_directories(merged)
-
         // read trimming and merging
-        //read_trimming(stage_input_directories.out.mix(stage_merge_directories.out))
         read_trimming(reads.mix(merged))
-        //params.trim ? read_merging(read_trimming.out[0].groupTuple()) :\
-        //read_merging(stage_input_directories.out.mix(stage_merge_directories.out).groupTuple())
         params.trim ? read_merging(read_trimming.out[0].groupTuple().map{ tuple(it[0], it[1], *it[2]) }) :\
         read_merging(reads.mix(merged).groupTuple().map{ tuple(it[0], it[1], *it[2]) })
 
         // fastqc process
-        //params.merge ? fastqc(read_merging.out[0]) :\
-        //params.trim ? fastqc(read_trimming.out[0]) : fastqc(stage_input_directories.out)
         params.merge ? fastqc(read_merging.out[0]) :\
         params.trim ? fastqc(read_trimming.out[0]) : fastqc(reads)
 
         // erne_bs5 process
-        //params.trim ? erne_bs5(read_trimming.out[0], ebm) : erne_bs5(stage_input_directories.out, ebm)
         params.trim ? erne_bs5(read_trimming.out[0], ebm) : erne_bs5(reads, ebm)
 
         // segemehl process
-        //params.trim ? segemehl(read_trimming.out[0], ctidx, gaidx, fasta, lamfa) : params.merge ?\
-        //segemehl(stage_merge_directories.out, ctidx, gaidx, fasta, lamfa) : segemehl(stage_input_directories.out, ctidx, gaidx, fasta, lamfa)
         params.trim ? segemehl(read_trimming.out[0], ctidx, gaidx, fasta, lamfa) : params.merge ?\
         segemehl(merged, ctidx, gaidx, fasta, lamfa) : segemehl(reads, ctidx, gaidx, fasta, lamfa)
 

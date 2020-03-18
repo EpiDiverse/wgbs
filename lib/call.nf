@@ -18,7 +18,7 @@ process "bam_processing" {
     script:
     """
     samtools sort -T deleteme -o sorted.bam unsorted.bam
-    change_sam_qname -i sorted.bam -o unique.bam --tags HI ${params.SE ? "" : "XB"}\\
+    change_sam_qname -i sorted.bam -o unique.bam --tags ${params.SE ? "HI" : "HI XB"} \\
     --read_name_tag XN
     """ 
 }

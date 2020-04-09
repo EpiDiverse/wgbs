@@ -6,7 +6,7 @@ process "bam_grouping" {
     tag "$replicate - $bamtype"
     
     input:
-    tuple replicate, bamtype, path("ungrouped.bam")
+    tuple replicate, bamtype, path(bam)
     // eg. [replicate, lambda, /path/to/unsorted.bam]
     // eg. [replicate, subset, /path/to/unsorted.bam]
 
@@ -20,7 +20,7 @@ process "bam_grouping" {
 
     script:
     """
-    samtools view -H unsorted.bam | grep "^@RG" |
+    samtools view -H ${bam} | grep "^@RG" |
     awk '{for(i=1;i<=NF;i++){if(\$i~"^ID"){split(\$i,ID,":")}else{if(\$i~"^SM"){split(\$i,SM,":")}}};
     print ID[2] >> SM[2]".txt"}'
     """ 

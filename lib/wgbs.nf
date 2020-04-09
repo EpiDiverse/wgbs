@@ -144,8 +144,13 @@ process "erne_bs5" {
         ${erne_errors}--threads ${task.cpus - 2} --output unsorted.erne-bs5.bam --print-all \\
         > ${replicate}/bam/logs/raw.erne-bs5.log 2>&1 || exit \$?
 
+        samtools view -H unsorted.erne-bs5.bam > header.txt
+        for ((i=1;i<=\$(grep -c SM:no_sample_specified <(samtools view -H unsorted.erne-bs5.bam));i++));
+        do sed -i "0,/SM:no_sample_specified/{s/SM:no_sample_specified/SM:sample\${i}/}" header.txt; done || exit \$?
+
+        samtools reheader header.txt unsorted.erne-bs5.bam |
         samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
-        -o ${replicate}/bam/raw.erne-bs5.bam unsorted.erne-bs5.bam
+        -o ${replicate}/bam/raw.erne-bs5.bam -
         """
     else
         """
@@ -155,8 +160,13 @@ process "erne_bs5" {
         ${erne_errors}--threads ${task.cpus - 2} --output unsorted.erne-bs5.bam --print-all \\
         > ${replicate}/bam/logs/raw.erne-bs5.log 2>&1 || exit \$?
 
+        samtools view -H unsorted.erne-bs5.bam > header.txt
+        for ((i=1;i<=\$(grep -c SM:no_sample_specified <(samtools view -H unsorted.erne-bs5.bam));i++));
+        do sed -i "0,/SM:no_sample_specified/{s/SM:no_sample_specified/SM:sample\${i}/}" header.txt; done || exit \$?
+
+        samtools reheader header.txt unsorted.erne-bs5.bam |
         samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
-        -o ${replicate}/bam/raw.erne-bs5.bam unsorted.erne-bs5.bam
+        -o ${replicate}/bam/raw.erne-bs5.bam -
         """
 
 }

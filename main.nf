@@ -448,8 +448,8 @@ workflow "CALL" {
         bam2 = bam.map{ tuple(*it, it[0]) }
         // split by read groups
         bam_grouping(bam1)
-        txt1 = bam_grouping.out.filter( it[1].size() == 1 ).map{ tuple(it[0], it[0]) } // only one RG present
-        txt2 = bam_grouping.out.filter( it[1].size() > 1 ).transpose().map{ tuple(it[0], it[1].tokenize(".").init().join(""), it[1]) }
+        txt1 = bam_grouping.out.filter{ it[1].size() == 1 }.map{ tuple(it[0], it[0]) } // only one RG present
+        txt2 = bam_grouping.out.filter{ it[1].size() > 1 }.transpose().map{ tuple(it[0], it[1].tokenize(".").init().join(""), it[1]) }
         rgs1 = bam.filter{ it[1] != "lambda" }.combine(txt1, by: 0) // eg. [replicate, bamtype, *.bam, filename]
         rgs2 = bam.filter{ it[1] != "lambda" }.combine(txt2, by: 0) // eg. [replicate, bamtype, *.bam, filename, *.txt]
         bam_sampling(rgs2) // eg. [replicate, bamtype, sample.bam, filename]

@@ -247,11 +247,11 @@ if (params.CALL){
     log.info "         output dir     : ${params.output}"
     log.info "         extension      : *.${params.extension}"
     log.info "         read type      : ${params.SE ? "single-end" : "paired-end (min: $params.minIns max: $params.maxIns)" }"
-    log.info "         read trimming  : ${params.trim ? 'enable' : 'disable' }"
-    log.info "         fastqc report  : ${params.fastqc ? 'enable' : 'disable' }"
+    log.info "         read trimming  : ${params.trim ? 'enabled' : 'disabled' }"
+    log.info "         fastqc report  : ${params.fastqc ? 'enabled' : 'disabled' }"
     log.info "         mapping tool   : ${params.merge ? "combined" : params.segemehl ? "segemehl" : "erne-bs5"}"
-    log.info "         multimappings  : ${params.unique ? "exclude" : "include" }"
-    log.info "         PCR dups       : ${params.noDedup ? "ignore" : "filter" }"
+    log.info "         multimappings  : ${params.unique ? "filtered" : "included" }"
+    log.info "         PCR dups       : ${params.noDedup ? "included" : "filtered" }"
     log.info "         XF filter      : ${params.XF}"
     log.info "         conv.rate est. : ${params.chrom ? "${params.chrom} " : "" }${params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "" : "${chrom}" }"
     log.info "         context(s)     : ${params.noCpG ? "" : "CpG " }${params.noCHH ? "" : "CHH " }${params.noCHG ? "" : "CHG" }"
@@ -444,8 +444,18 @@ workflow "CALL" {
         chrom
 
     main:
+        bam1 = bam.filter{ it[1] != "lambda" }
+        bam2 = bam.map{ tuple(*it, it[0]) }
+        // split by read groups
+        bam_grouping(bam1)
+        txt1 = bam_grouping.out.filter( it[1].size() == 1 ).map{ tuple(it[0], it[0]) } // only one RG present
+        txt2 = bam_grouping.out.filter( it[1].size() > 1 ).transpose().map{ tuple(it[0], it[1].tokenize(".").init().join(""), it[1]) }
+        rgs1 = bam.filter{ it[1] != "lambda" }.combine(txt1, by: 0) // eg. [replicate, bamtype, *.bam, filename]
+        rgs2 = bam.filter{ it[1] != "lambda" }.combine(txt2, by: 0) // eg. [replicate, bamtype, *.bam, filename, *.txt]
+        bam_sampling(rgs2) // eg. [replicate, bamtype, sample.bam, filename]
+       
         // deduplication and methylation calling
-        bam_processing(bam)
+        params.ignoreRG ? bam_processing(bam2) : bam_processing(bam2.filter{ it[1] == "lambda" }.mix(rgs1, bam_sampling.out))
         Picard_MarkDuplicates(bam_processing.out)
         params.noDedup ? MethylDackel(bam_processing.out,fasta,lamfa,context) : MethylDackel(Picard_MarkDuplicates.out[0],fasta,lamfa,context)
 
@@ -585,11 +595,11 @@ workflow.onComplete {
     log.info "         Name         : ${workflow.runName}${workflow.resume ? " (resumed)" : ""}"
     log.info "         Profile      : ${workflow.profile}"
     log.info "         Launch dir   : ${workflow.launchDir}"    
-    log.info "         Work dir     : ${workflow.workDir} ${params.debug ? "" : "(cleared)" }"
+    log.info "         Work dir     : ${workflow.workDir} ${workflow.success && !params.debug ? "(cleared)" : ""}"
     log.info "         Status       : ${workflow.success ? "success" : "failed"}"
     log.info "         Error report : ${workflow.errorReport ?: "-"}"
     log.info ""
 
-    if (!params.debug && workflow.success) {
+    if (workflow.success && !params.debug) {
         ["bash", "${baseDir}/bin/clean.sh", "${workflow.sessionId}"].execute() }
 }

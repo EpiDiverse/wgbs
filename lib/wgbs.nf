@@ -1,9 +1,9 @@
 #!/usr/bin/env nextflow
 
 // initial vars
-cutadapt_clip5 = params.clip5.toInteger() > 0 ? " -u ${params.clip5}" : ""
-cutadapt_clip3 = params.clip3.toInteger() > 0 ? " -u -${params.clip3}" : ""
-erne_errors = params.maxErrors.toInteger() < 0 ? "--errors ${params.maxErrors} " : " "
+//cutadapt_clip5 = params.clip5.toInteger() > 0 ? " -u ${params.clip5}" : ""
+//cutadapt_clip3 = params.clip3.toInteger() > 0 ? " -u -${params.clip3}" : ""
+//erne_errors = params.maxErrors.toInteger() < 0 ? "--errors ${params.maxErrors} " : " "
 
 
 
@@ -18,11 +18,11 @@ process "read_trimming" {
     publishDir "${params.output}", mode: 'copy', enabled: params.keepReads && !params.merge ? true : false
 
     input:
-    tuple replicate, readtype, path(reads)
+    tuple val(replicate), val(readtype), path(reads)
     // eg. [replicate, "input", [read1.fastq.gz, read2.fastq.gz]]
 
     output:
-    tuple replicate, readtype, path("fastq/*.${params.extension}")
+    tuple val(replicate), val(readtype), path("fastq/*.${params.extension}")
     // eg. [replicate, "input", /path/to/replicate]
     path "fastq/*.${params.extension}"
     path "fastq/logs/*.log"
@@ -64,11 +64,11 @@ process "read_merging" {
     publishDir "${params.output}", mode: 'copy', enabled: params.keepReads && params.trim ? true : false
 
     input:
-    tuple replicate, readtype, path("input"), path("merge")
+    tuple val(replicate), val(readtype), path("input"), path("merge")
     // eg. [replicate, ["input","merge"], [/path/to/input/replicate, /path/to/merge/replicate]]
 
     output:
-    tuple replicate, readtype, path("fastq/*.${params.extension}")
+    tuple val(replicate), val(readtype), path("fastq/*.${params.extension}")
     // eg. [replicate, ["input","merge"], /path/to/replicate]
     path "fastq/*.${params.extension}"
 
@@ -100,7 +100,7 @@ process "fastqc" {
     publishDir "${params.output}", mode: 'move'
 
     input:
-    tuple replicate, readtype, path(reads)
+    tuple val(replicate), val(readtype), path(reads)
     // eg. [replicate, "input", /path/to/replicate]
     // eg. [replicate, ["input","merge"], /path/to/replicate]
 
@@ -130,12 +130,12 @@ process "erne_bs5" {
     publishDir "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
 
     input:
-    tuple replicate, readtype, path(reads)
+    tuple val(replicate), val(readtype), path(reads)
     // eg. [replicate, ["input"], /path/to/inputs]
     path ebm
 
     output:
-    tuple replicate, path("$replicate/bam/raw.erne-bs5.bam")
+    tuple val(replicate), path("$replicate/bam/raw.erne-bs5.bam")
     // eg. [replicate, /path/to/replicate/bam/raw.erne-bs5.bam]
     //path "$replicate/bam/raw.erne-bs5.bam"
     path "$replicate/bam/logs/raw.erne-bs5.log"
@@ -190,7 +190,7 @@ process "segemehl" {
     publishDir "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
 
     input:
-    tuple replicate, readtype, path(reads)
+    tuple val(replicate), val(readtype), path(reads)
     // eg. [replicate, ["input"], /path/to/inputs]
     path ctidx
     path gaidx
@@ -198,7 +198,7 @@ process "segemehl" {
     path lamfa
 
     output:
-    tuple replicate, path("$replicate/bam/raw.segemehl.bam")
+    tuple val(replicate), path("$replicate/bam/raw.segemehl.bam")
     // eg. [replicate, /path/to/replicate]
     //path "$replicate/bam/raw.segemehl.bam"
     path "$replicate/bam/logs/raw.segemehl.log" 
@@ -240,13 +240,13 @@ process "erne_bs5_processing" {
             enabled: params.keepBams || (!params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
 
     input:
-    tuple replicate, path(erne)
+    tuple val(replicate), path(erne)
     // eg. [replicate, /path/to/input]
     path fasta
     path lamfa
     
     output:
-    tuple replicate, val("erne-bs5"), path("$replicate/bam/proc.erne-bs5.bam")
+    tuple val(replicate), val("erne-bs5"), path("$replicate/bam/proc.erne-bs5.bam")
     // eg. [replicate, /path/to/replicate]
     path "${replicate}.bam"
     
@@ -341,11 +341,11 @@ process "segemehl_processing" {
             enabled: params.keepBams || (!params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
 
     input:
-    tuple replicate, path(sege)
+    tuple val(replicate), path(sege)
     // eg. [replicate, /path/to/input]
 
     output:
-    tuple replicate, val("segemehl"), path("$replicate/bam/proc.segemehl.bam")
+    tuple val(replicate), val("segemehl"), path("$replicate/bam/proc.segemehl.bam")
     // eg. [replicate, segemehl, /path/to/proc.segemehl.bam]
     path "${replicate}.bam"
 
@@ -386,11 +386,11 @@ process "bam_merging" {
             enabled: params.keepBams || (params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
 
     input:
-    tuple replicate, erne, path(erne_bs5), sege, path(segemehl)
+    tuple val(replicate), val(erne), path(erne_bs5), val(sege), path(segemehl)
     // eg. [replicate, proc.erne-bs5.bam, proc.segemehl.bam]
 
     output:
-    tuple replicate, val("merged"), path("$replicate/bam/merged.bam")
+    tuple val(replicate), val("merged"), path("$replicate/bam/merged.bam")
     // eg. [replicate, merged, /path/to/replicate/replicate.bam]
     path "${replicate}.bam"
    
@@ -417,15 +417,15 @@ process "bam_subsetting" {
     publishDir "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
 
     input:
-    tuple replicate, bamtype, path(bamfile)
+    tuple val(replicate), val(bamtype), path(bamfile)
     // eg. [replicate, merged, bamfile.bam]
     path fai
     path lai
     val chrom
 
     output:
-    tuple replicate, val("lambda"), path("${replicate}/bam/${chrom}.bam")
-    tuple replicate, val("subset"), path("${replicate}/bam/subset.bam")
+    tuple val(replicate), val("lambda"), path("${replicate}/bam/${chrom}.bam")
+    tuple val(replicate), val("subset"), path("${replicate}/bam/subset.bam")
     // eg. [replicate, subset, /path/to/replicate/bam/subset.bam]
     path "${replicate}.bam"
     
@@ -467,7 +467,7 @@ process "bam_statistics" {
     publishDir "${params.output}/bam", mode: 'copy'
 
     input:
-    tuple replicate, bamtype, path(bamfile)
+    tuple val(replicate), val(bamtype), path(bamfile)
     // eg. [replicate, bamtype, bamfile.bam]
 
     output:
@@ -496,14 +496,14 @@ process "bam_filtering" {
     publishDir "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
 
     input:
-    tuple replicate, bamtype, path(bamfile)
+    tuple val(replicate), val(bamtype), path(bamfile)
     // eg. [replicate, lambda, /path/to/bamfile.bam]
     // eg. [replicate, subset, /path/to/bamfile.bam]
 
     output:
-    tuple replicate, bamtype, path("$replicate/bam/unique.bam")
-    tuple replicate, bamtype, path("$replicate/bam/*.bam")
-    tuple replicate, bamtype, path("${replicate}.bam")
+    tuple val(replicate), val(bamtype), path("$replicate/bam/unique.bam")
+    tuple val(replicate), val(bamtype), path("$replicate/bam/*.bam")
+    tuple val(replicate), val(bamtype), path("${replicate}.bam")
     // eg. [replicate, lambda, /path/to/replicate/*.bam]
     // eg. [replicate, subset, /path/to/replicate/*.bam]
     

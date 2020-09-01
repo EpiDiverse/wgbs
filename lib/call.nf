@@ -8,12 +8,12 @@ process "bam_grouping" {
     publishDir "${params.output}/bam"
 
     input:
-    tuple replicate, bamtype, path(bam)
+    tuple val(replicate), val(bamtype), path(bam)
     // eg. [replicate, lambda, /path/to/unsorted.bam]
     // eg. [replicate, subset, /path/to/unsorted.bam]
 
     output:
-    tuple replicate, path("*.txt")
+    tuple val(replicate), path("*.txt")
     // eg. [replicate, no_sample_specified.txt]
     // eg. [replicate, [sample1.txt, sample2.txt, ... sampleN.txt]]
     
@@ -46,11 +46,11 @@ process "bam_sampling" {
     publishDir "${params.output}/bam"
 
     input:
-    tuple replicate, bamtype, path("input.bam"), filename, path("input.txt")
+    tuple val(replicate), val(bamtype), path("input.bam"), val(filename), path("input.txt")
     // eg. [replicate, subset, /path/to/unsorted.bam, sample1, sample1.txt]
 
     output:
-    tuple replicate, bamtype, path("sample.bam"), filename
+    tuple val(replicate), val(bamtype), path("sample.bam"), val(filename)
     // eg. [replicate, subset, /path/to/sample.bam, sample1]
     
     when:
@@ -75,12 +75,12 @@ process "bam_processing" {
     publishDir "${params.output}/bam"
 
     input:
-    tuple replicate, bamtype, path("unsorted.bam"), filename
+    tuple val(replicate), val(bamtype), path("unsorted.bam"), val(filename)
     // eg. [replicate, lambda, /path/to/unsorted.bam, replicate]
     // eg. [replicate, subset, /path/to/unsorted.bam, sample1]
 
     output:
-    tuple replicate, bamtype, filename, path("unique.bam")
+    tuple val(replicate), val(bamtype), val(filename), path("unique.bam")
     // eg. [replicate, lambda, replicate, /path/to/unique.bam]
     // eg. [replicate, subset, sample1, /path/to/unique.bam]
     
@@ -102,12 +102,12 @@ process "Picard_MarkDuplicates" {
     publishDir "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
 
     input:
-    tuple replicate, bamtype, filename, path(bam)
+    tuple val(replicate), val(bamtype), val(filename), path(bam)
     // eg. [replicate, lambda, replicate, /path/to/*.bam] or [replicate, subset, sample1, /path/to/*.bam]
 
     output:
-    tuple replicate, bamtype, filename, path("$replicate/bam/*.bam")
-    tuple replicate, bamtype, filename, path("$replicate/*.txt")
+    tuple val(replicate), val(bamtype), val(filename), path("$replicate/bam/*.bam")
+    tuple val(replicate), val(bamtype), val(filename), path("$replicate/*.txt")
     path "$replicate/bam/logs/*.log"
 
     when:
@@ -138,7 +138,7 @@ process "MethylDackel" {
     publishDir "${params.output}/bedGraph", mode: 'copy'
 
     input:
-    tuple replicate, bamtype, filename, path(bam)
+    tuple val(replicate), val(bamtype), val(filename), path(bam)
     // eg. [replicate, lambda, replicate, markDups.bam]
     // eg. [replicate, subset, sample1, markDups.bam]
     path fasta
@@ -146,8 +146,8 @@ process "MethylDackel" {
     val context
     
     output:
-    tuple replicate, bamtype, filename, path("*/*.bedGraph")
-    tuple replicate, bamtype, filename, path("$replicate/*.svg")
+    tuple val(replicate), val(bamtype), val(filename), path("*/*.bedGraph")
+    tuple val(replicate), val(bamtype), val(filename), path("$replicate/*.svg")
     path "logs/*.err"
 
     script:
@@ -203,14 +203,14 @@ process "conversion_rate_estimation" {
     tag "$replicate - ${ bamtype == "lambda" ? "${chrom}" : "${params.chrom}" }"
     
     input:
-    tuple replicate, bamtype, filename, path("bedGraph")
+    tuple val(replicate), val(bamtype), val(filename), path("bedGraph")
     // eg. [replicate, lambda, replicate, [CpG.bedGraph, CHG.bedGraph, CHH.bedGraph]]
     // eg. [replicate, subset, sample1, [CpG.bedGraph, CHG.bedGraph, CHH.bedGraph]]
     // lambda bamtype will always have each context in bedGraph files
     val chrom
 
     output:
-    tuple replicate, path("*.txt")
+    tuple val(replicate), path("*.txt")
        
     when:
     ( bamtype == "lambda" || params.chrom )

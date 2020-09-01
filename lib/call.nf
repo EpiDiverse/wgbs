@@ -154,7 +154,7 @@ process "MethylDackel" {
     
     output:
     tuple val(replicate), val(bamtype), val(filename), path("*/*.bedGraph")
-    tuple val(replicate), val(bamtype), val(filename), path("$replicate/*.svg")
+    tuple val(replicate), val(bamtype), val(filename), path("*/*.svg")
     path "logs/*.err"
 
     script:

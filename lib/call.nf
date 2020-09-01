@@ -99,8 +99,8 @@ process "Picard_MarkDuplicates" {
     label 'finish'
     tag "$replicate - $bamtype"
 
-    publishDir "${params.output}/bam", pattern: "$replicate/bam/*.bam", mode: 'copy', enabled: params.keepBams && bamtype != "lambda" ? true : false
-    publishDir "${params.output}/bam", pattern: "$replicate/*.txt", mode: 'copy', enabled: bamtype != "lambda" ? true : false
+    publishDir "${params.output}/bam", pattern: "$replicate/bam/*.bam", mode: 'copy', enabled: {params.keepBams && bamtype != "lambda" ? true : false}
+    publishDir "${params.output}/bam", pattern: "$replicate/*.txt", mode: 'copy', enabled: {bamtype != "lambda" ? true : false}
     publishDir "${params.output}/bam", pattern: "$replicate/bam/logs/*.log", mode: 'move'
 
     input:
@@ -137,8 +137,8 @@ process "MethylDackel" {
     label 'ignore'
     tag "$replicate - $bamtype"
 
-    publishDir "${params.output}/bedGraph", pattern: "*/*.bedGraph", mode: 'copy', enabled: bamtype != "lambda" ? true : false
-    publishDir "${params.output}/bam", pattern: "$replicate/*.svg", mode: 'move', enabled: bamtype != "lambda" ? true : false
+    publishDir "${params.output}/bedGraph", pattern: "*/*.bedGraph", mode: 'copy', enabled: {bamtype != "lambda" ? true : false}
+    publishDir "${params.output}/bam", pattern: "$replicate/*.svg", mode: 'move', enabled: {bamtype != "lambda" ? true : false}
     publishDir "${params.output}/bedGraph", pattern: "logs/*.err", mode: 'move'
 
     input:

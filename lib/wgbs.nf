@@ -15,7 +15,8 @@ process "read_trimming" {
     label 'finish'
     tag "$replicate"
 
-    publishDir "${params.output}", mode: 'copy', enabled: params.keepReads && !params.merge ? true : false
+    publishDir "${params.output}", pattern: "fastq/*.${params.extension}", mode: 'copy', enabled: params.keepReads && !params.merge ? true : false
+    publishDir "${params.output}", pattern: "fastq/logs/*.log", mode: 'move'
 
     input:
     tuple val(replicate), val(readtype), path(reads)
@@ -127,7 +128,8 @@ process "erne_bs5" {
     label 'finish'
     tag "$replicate"
 
-    publishDir "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
+    publishDir "${params.output}/bam", pattern: "$replicate/bam/raw.erne-bs5.bam", mode: 'copy', enabled: params.keepBams ? true : false
+    publishDir "${params.output}/bam", pattern: "$replicate/bam/logs/raw.erne-bs5.log", mode: 'move'
 
     input:
     tuple val(replicate), val(readtype), path(reads)
@@ -187,7 +189,8 @@ process "segemehl" {
     label 'finish'
     tag "$replicate"
 
-    publishDir "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
+    publishDir "${params.output}/bam", pattern: "$replicate/bam/raw.segemehl.bam", mode: 'copy', enabled: params.keepBams ? true : false
+    publishDir "${params.output}/bam", pattern: "$replicate/bam/logs/raw.segemehl.log", mode: 'move'
 
     input:
     tuple val(replicate), val(readtype), path(reads)
@@ -236,8 +239,10 @@ process "erne_bs5_processing" {
     label 'finish'
     tag "$replicate"
 
-    publishDir "${params.output}/bam", mode: 'copy', \
+    publishDir "${params.output}/bam", pattern: "$replicate/bam/proc.erne-bs5.bam", mode: 'copy', \
             enabled: params.keepBams || (!params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
+    publishDir "${params.output}/bam", pattern: "${replicate}.bam" mode: 'copyNoFollow', \
+            enabled: !params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? true : false
 
     input:
     tuple val(replicate), path(erne)
@@ -337,8 +342,10 @@ process "segemehl_processing" {
     label 'finish'
     tag "$replicate"
 
-    publishDir "${params.output}/bam", mode: 'copy', \
+    publishDir "${params.output}/bam", pattern: "$replicate/bam/proc.segemehl.bam", mode: 'copy', \
             enabled: params.keepBams || (!params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
+    publishDir "${params.output}/bam", pattern: "${replicate}.bam", mode: 'copyNoFollow', \
+            enabled: !params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? true : false
 
     input:
     tuple val(replicate), path(sege)
@@ -382,8 +389,10 @@ process "bam_merging" {
     label 'finish'
     tag "$replicate"
 
-    publishDir "${params.output}/bam", mode: 'copy', \
+    publishDir "${params.output}/bam", pattern: "$replicate/bam/merged.bam", mode: 'copy', \
             enabled: params.keepBams || (params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
+    publishDir "${params.output}/bam", pattern: "${replicate}.bam", mode: 'copyNoFollow', \
+            enabled: params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? true : false
 
     input:
     tuple val(replicate), val(erne), path(erne_bs5), val(sege), path(segemehl)
@@ -414,7 +423,9 @@ process "bam_subsetting" {
     label 'finish'
     tag "$replicate"
 
-    publishDir "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
+    publishDir "${params.output}/bam", pattern: "${replicate}/bam/${chrom}.bam", mode: 'copy', enabled: params.keepBams ? true : false
+    publishDir "${params.output}/bam", pattern: "${replicate}/bam/subset.bam", mode: 'copy', enabled: true
+    publishDir "${params.output}/bam", pattern: "${replicate}.bam", mode: 'copyNoFollow', enabled: true
 
     input:
     tuple val(replicate), val(bamtype), path(bamfile)
@@ -464,7 +475,8 @@ process "bam_statistics" {
     label 'ignore'
     tag "$replicate"
 
-    publishDir "${params.output}/bam", mode: 'copy'
+    publishDir "${params.output}/bam", pattern: "${replicate}/${replicate}.bam.stats", mode: 'copy'
+    publishDir "${params.output}/bam", pattern: "${replicate}/stats/*.png", mode: 'move'
 
     input:
     tuple val(replicate), val(bamtype), path(bamfile)
@@ -493,7 +505,8 @@ process "bam_filtering" {
     label 'finish'
     tag "$replicate - $bamtype"
 
-    publishDir "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
+    publishDir "${params.output}/bam", pattern: "$replicate/bam/*.bam", mode: 'copy', enabled: params.keepBams && bamtype != "lambda" ? true : false
+    publishDir "${params.output}/bam", pattern: "${replicate}.bam", mode: 'copyNoFollow', enabled: true
 
     input:
     tuple val(replicate), val(bamtype), path(bamfile)

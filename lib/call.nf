@@ -5,7 +5,7 @@ process "bam_grouping" {
     label 'finish'
     tag "$replicate - $bamtype"
 
-    publishDir "${params.output}/bam"
+    //publishDir "${params.output}/bam"
 
     input:
     tuple val(replicate), val(bamtype), path(bam)
@@ -43,7 +43,7 @@ process "bam_sampling" {
     label 'finish'
     tag "$replicate - $bamtype"
 
-    publishDir "${params.output}/bam"
+    //publishDir "${params.output}/bam"
 
     input:
     tuple val(replicate), val(bamtype), path("input.bam"), val(filename), path("input.txt")
@@ -72,7 +72,7 @@ process "bam_processing" {
     label 'finish'
     tag "$replicate - $bamtype"
 
-    publishDir "${params.output}/bam"
+    //publishDir "${params.output}/bam"
 
     input:
     tuple val(replicate), val(bamtype), path("unsorted.bam"), val(filename)
@@ -99,7 +99,9 @@ process "Picard_MarkDuplicates" {
     label 'finish'
     tag "$replicate - $bamtype"
 
-    publishDir "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
+    publishDir "${params.output}/bam", pattern: "$replicate/bam/*.bam", mode: 'copy', enabled: params.keepBams && bamtype != "lambda" ? true : false
+    publishDir "${params.output}/bam", pattern: "$replicate/*.txt", mode: 'copy', enabled: bamtype != "lambda" ? true : false
+    publishDir "${params.output}/bam", pattern: "$replicate/bam/logs/*.log", mode: 'move'
 
     input:
     tuple val(replicate), val(bamtype), val(filename), path(bam)
@@ -135,7 +137,9 @@ process "MethylDackel" {
     label 'ignore'
     tag "$replicate - $bamtype"
 
-    publishDir "${params.output}/bedGraph", mode: 'copy'
+    publishDir "${params.output}/bedGraph", pattern: "*/*.bedGraph", mode: 'copy', enabled: bamtype != "lambda" ? true : false
+    publishDir "${params.output}/bam", pattern: "$replicate/*.svg", mode: 'move', enabled: bamtype != "lambda" ? true : false
+    publishDir "${params.output}/bedGraph", pattern: "logs/*.err", mode: 'move'
 
     input:
     tuple val(replicate), val(bamtype), val(filename), path(bam)
@@ -174,6 +178,8 @@ process "linear_regression" {
 
     label 'low'
     label 'ignore'
+
+    publishDir "${params.output}", pattern: "Duplicates.*", mode: 'move'
 
     input:
     path "duplicates"

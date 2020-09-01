@@ -1,8 +1,12 @@
 [<img width="200" align="right" src="docs/images/euflagbetter.jpg">](https://ec.europa.eu/programmes/horizon2020/en)
 [<img width="200" align="right" src="docs/images/epidiverse-logo.jpg">](https://epidiverse.eu)
-[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A519.09.0-brightgreen.svg)](https://www.nextflow.io/)
+[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A520.07.1-brightgreen.svg)](https://www.nextflow.io/)
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg)](http://bioconda.github.io/)
 [![Docker](https://img.shields.io/docker/automated/epidiverse/wgbs.svg)](https://hub.docker.com/r/epidiverse/wgbs)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/epidiverse/wgbs)]()
+[![Publication](https://img.shields.io/badge/Published-bioRxiv%20Biotechnology-26af64.svg?colorB=26af64&style=popout)](https://www.biorxiv.org/content/10.1101/2020.08.28.271585v1)
+![Twitter Follow](https://img.shields.io/twitter/follow/epidiverse?style=social)
+
 
 EpiDiverse-WGBS Pipeline
 ========================
@@ -24,13 +28,13 @@ ii. Install one of [`docker`](https://docs.docker.com/engine/installation/), [`s
 iii. Download the pipeline and test it on a minimal dataset with a single command
 
 ```bash
-nextflow run epidiverse/wgbs -profile test,<docker|singularity|conda>
+nextflow NXF_VER=20.07.1 run epidiverse/wgbs -profile test,<docker|singularity|conda>
 ```
 
 iv. Start running your own analysis!
 
 ```bash
-nextflow run epidiverse/wgbs -profile <docker|singularity|conda> \
+nextflow NXF_VER=20.07.1 run epidiverse/wgbs -profile <docker|singularity|conda> \
 --input /path/to/reads/directory --reference /path/to/reference.fasta
 ```
 

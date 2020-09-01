@@ -15,7 +15,7 @@ process "read_trimming" {
     label 'finish'
     tag "$replicate"
 
-    publishDir "${params.output}"
+    publishDir "${params.output}", mode: 'copy', enabled: params.keepReads && !params.merge ? true : false
 
     input:
     tuple replicate, readtype, path(reads)
@@ -34,7 +34,7 @@ process "read_trimming" {
     if( params.SE )
         """
         mkdir fastq fastq/logs
-        cutadapt -j ${task.cpus} -a ${params.forward}${cutadapt_clip5}${cutadapt_clip3} \\
+        cutadapt -j ${task.cpus} -a ${params.forward}${params.clip5.toInteger() > 0 ? " -u ${params.clip5}" : ""}${params.clip3.toInteger() > 0 ? " -u -${params.clip3}" : ""} \\
         -q ${params.minQual} -m ${params.minLeng} -O ${params.minOver} \\
         -o fastq/${params.merge ? "${readtype}." : ""}${replicate}.${params.extension} ${reads} \\
         > fastq/logs/cutadapt.${replicate}.${readtype}.log 2>&1
@@ -42,7 +42,7 @@ process "read_trimming" {
     else
         """
         mkdir fastq fastq/logs
-        cutadapt -j ${task.cpus} -a ${params.forward} -A ${params.reverse}${cutadapt_clip5}${cutadapt_clip3} \\
+        cutadapt -j ${task.cpus} -a ${params.forward} -A ${params.reverse}${params.clip5.toInteger() > 0 ? " -u ${params.clip5}" : ""}${params.clip3.toInteger() > 0 ? " -u -${params.clip3}" : ""} \\
         -q ${params.minQual} -m ${params.minLeng} -O ${params.minOver} \\
         -o fastq/${params.merge ? "${readtype}." : ""}${reads[0]} \\
         -p fastq/${params.merge ? "${readtype}." : ""}${reads[1]} ${reads} \\
@@ -61,7 +61,7 @@ process "read_merging" {
     label 'finish'
     tag "$replicate"
 
-    publishDir "${params.output}"
+    publishDir "${params.output}", mode: 'copy', enabled: params.keepReads && params.trim ? true : false
 
     input:
     tuple replicate, readtype, path("input"), path("merge")
@@ -97,7 +97,7 @@ process "fastqc" {
     label 'ignore'
     tag "$replicate"
 
-    publishDir "${params.output}"
+    publishDir "${params.output}", mode: 'move'
 
     input:
     tuple replicate, readtype, path(reads)
@@ -127,7 +127,7 @@ process "erne_bs5" {
     label 'finish'
     tag "$replicate"
 
-    publishDir "${params.output}/bam"
+    publishDir "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
 
     input:
     tuple replicate, readtype, path(reads)
@@ -149,7 +149,7 @@ process "erne_bs5" {
         mkdir ${replicate} ${replicate}/bam ${replicate}/bam/logs
 
         erne-bs5 --reference ${ebm} --query1 ${reads} --fragment-size-min ${params.minIns} --fragment-size-max ${params.maxIns} \\
-        ${erne_errors}--threads ${task.cpus - 2} --output unsorted.erne-bs5.bam --print-all \\
+        ${params.maxErrors.toInteger() < 0 ? "--errors ${params.maxErrors} " : " "}--threads ${task.cpus - 2} --output unsorted.erne-bs5.bam --print-all \\
         > ${replicate}/bam/logs/raw.erne-bs5.log 2>&1 || exit \$?
 
         samtools view -H unsorted.erne-bs5.bam > header.txt
@@ -165,7 +165,7 @@ process "erne_bs5" {
         mkdir ${replicate} ${replicate}/bam ${replicate}/bam/logs
 
         erne-bs5 --reference ${ebm} --query1 ${reads[0]} --query2 ${reads[1]} --fragment-size-min ${params.minIns} --fragment-size-max ${params.maxIns} \\
-        ${erne_errors}--threads ${task.cpus - 2} --output unsorted.erne-bs5.bam --print-all \\
+        ${params.maxErrors.toInteger() < 0 ? "--errors ${params.maxErrors} " : " "}--threads ${task.cpus - 2} --output unsorted.erne-bs5.bam --print-all \\
         > ${replicate}/bam/logs/raw.erne-bs5.log 2>&1 || exit \$?
 
         samtools view -H unsorted.erne-bs5.bam > header.txt
@@ -187,7 +187,7 @@ process "segemehl" {
     label 'finish'
     tag "$replicate"
 
-    publishDir "${params.output}/bam"
+    publishDir "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
 
     input:
     tuple replicate, readtype, path(reads)
@@ -236,7 +236,8 @@ process "erne_bs5_processing" {
     label 'finish'
     tag "$replicate"
 
-    publishDir "${params.output}/bam"
+    publishDir "${params.output}/bam", mode: 'copy', \
+            enabled: params.keepBams || (!params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
 
     input:
     tuple replicate, path(erne)
@@ -336,7 +337,8 @@ process "segemehl_processing" {
     label 'finish'
     tag "$replicate"
 
-    publishDir "${params.output}/bam"
+    publishDir "${params.output}/bam", mode: 'copy', \
+            enabled: params.keepBams || (!params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
 
     input:
     tuple replicate, path(sege)
@@ -380,7 +382,8 @@ process "bam_merging" {
     label 'finish'
     tag "$replicate"
 
-    publishDir "${params.output}/bam"
+    publishDir "${params.output}/bam", mode: 'copy', \
+            enabled: params.keepBams || (params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
 
     input:
     tuple replicate, erne, path(erne_bs5), sege, path(segemehl)
@@ -411,7 +414,7 @@ process "bam_subsetting" {
     label 'finish'
     tag "$replicate"
 
-    publishDir "${params.output}/bam"
+    publishDir "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
 
     input:
     tuple replicate, bamtype, path(bamfile)
@@ -461,7 +464,7 @@ process "bam_statistics" {
     label 'ignore'
     tag "$replicate"
 
-    publishDir "${params.output}/bam"
+    publishDir "${params.output}/bam", mode: 'copy'
 
     input:
     tuple replicate, bamtype, path(bamfile)
@@ -490,7 +493,7 @@ process "bam_filtering" {
     label 'finish'
     tag "$replicate - $bamtype"
 
-    publishDir "${params.output}/bam"
+    publishDir "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
 
     input:
     tuple replicate, bamtype, path(bamfile)

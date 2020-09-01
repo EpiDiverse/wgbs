@@ -99,7 +99,7 @@ process "Picard_MarkDuplicates" {
     label 'finish'
     tag "$replicate - $bamtype"
 
-    publishDir "${params.output}/bam"
+    publishDir "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
 
     input:
     tuple replicate, bamtype, filename, path(bam)
@@ -135,7 +135,7 @@ process "MethylDackel" {
     label 'ignore'
     tag "$replicate - $bamtype"
 
-    publishDir "${params.output}/bedGraph"
+    publishDir "${params.output}/bedGraph", mode: 'copy'
 
     input:
     tuple replicate, bamtype, filename, path(bam)

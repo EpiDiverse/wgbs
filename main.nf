@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 
 // DSL2 BRANCH - this branch is for testing new Nextflow features
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
 // PRINT HELP AND EXIT
 if(params.help){
@@ -159,7 +159,7 @@ if ( workflow.profile.tokenize(",").contains("epi") || workflow.profile.tokenize
 
     // VALIDATE INITIAL PARAMETERS
     ParameterChecks.checkParamsEpi(params)
-    include check_ref_errors from './lib/functions.nf' params(reference: params.reference, thlaspi: params.thlaspi, populus: params.populus, fragaria: params.fragaria, nolambda: params.noLambda)
+    include { check_ref_errors } from './lib/functions.nf' params(reference: params.reference, thlaspi: params.thlaspi, populus: params.populus, fragaria: params.fragaria, nolambda: params.noLambda)
     (fasta, fai, ebm_path, ctidx_path, gaidx_path) = check_ref_errors(params.reference, params.thlaspi, params.fragaria, params.populus, params.noLambda)
 }
 
@@ -298,7 +298,7 @@ if ( params.CALL ){
     // attempt to call check_test_data function from lib/functions.nf if workflow.profile contains test
     if ( workflow.profile.tokenize(",").contains("test") ){
 
-        include check_test_data from './lib/functions.nf' params(readPaths: params.readPaths, mergePaths: params.mergePaths, singleEnd: params.SE, merge: params.merge)
+        include { check_test_data } from './lib/functions.nf' params(readPaths: params.readPaths, mergePaths: params.mergePaths, singleEnd: params.SE, merge: params.merge)
         (reads, merged) = check_test_data(params.readPaths, params.mergePaths, params.SE, params.merge)
         
     } else { 
@@ -331,9 +331,9 @@ if ( params.CALL ){
 
 
 // INCLUDES
-include './lib/index.nf' params(params)
-include './lib/wgbs.nf' params(params)
-include './lib/call.nf' params(params)
+include {erne_bs5_indexing;segemehl_indexing} from './lib/index.nf' params(params)
+include {read_trimming;read_merging;fastqc;erne_bs5;segemehl;erne_bs5_processing;segemehl_processing;bam_merging;bam_subsetting;bam_statistics;bam_filtering;} from './lib/wgbs.nf' params(params)
+include {bam_grouping;bam_sampling;bam_processing;Picard_MarkDuplicates;MethylDackel;linear_regression;conversion_rate_estimation} from './lib/call.nf' params(params)
 
 
 // WORKFLOWS

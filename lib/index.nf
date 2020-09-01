@@ -7,7 +7,7 @@ process "erne_bs5_indexing" {
     label "low"
     label "finish"
 
-    publishDir "${params.output}/index"
+    publishDir "${params.output}/index", mode: 'copy', enabled: params.INDEX ? true : false
 
     input:
     path fasta
@@ -39,7 +39,7 @@ process "segemehl_indexing" {
     label "low"
     label "finish"
 
-    publishDir "${params.output}/index"
+    publishDir "${params.output}/index", mode: 'copy', enabled: params.INDEX ? true : false
 
     input:
     path fasta

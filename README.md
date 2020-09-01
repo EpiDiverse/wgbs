@@ -28,13 +28,13 @@ ii. Install one of [`docker`](https://docs.docker.com/engine/installation/), [`s
 iii. Download the pipeline and test it on a minimal dataset with a single command
 
 ```bash
-nextflow NXF_VER=20.07.1 run epidiverse/wgbs -profile test,<docker|singularity|conda>
+NXF_VER=20.07.1 nextflow run epidiverse/wgbs -profile test,<docker|singularity|conda>
 ```
 
 iv. Start running your own analysis!
 
 ```bash
-nextflow NXF_VER=20.07.1 run epidiverse/wgbs -profile <docker|singularity|conda> \
+NXF_VER=20.07.1 nextflow run epidiverse/wgbs -profile <docker|singularity|conda> \
 --input /path/to/reads/directory --reference /path/to/reference.fasta
 ```
 

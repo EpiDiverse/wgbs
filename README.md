@@ -21,17 +21,17 @@ The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool
 
 ## Quick Start
 
-i. Install [`nextflow`](https://www.nextflow.io/)
+1. Install [`nextflow`](https://www.nextflow.io/)
 
-ii. Install one of [`docker`](https://docs.docker.com/engine/installation/), [`singularity`](https://www.sylabs.io/guides/3.0/user-guide/) or [`conda`](https://conda.io/miniconda.html)
+2. Install one of [`docker`](https://docs.docker.com/engine/installation/), [`singularity`](https://www.sylabs.io/guides/3.0/user-guide/) or [`conda`](https://conda.io/miniconda.html)
 
-iii. Download the pipeline and test it on a minimal dataset with a single command
+3. Download the pipeline and test it on a minimal dataset with a single command
 
 ```bash
 NXF_VER=20.07.1 nextflow run epidiverse/wgbs -profile test,<docker|singularity|conda>
 ```
 
-iv. Start running your own analysis!
+4. Start running your own analysis!
 
 ```bash
 NXF_VER=20.07.1 nextflow run epidiverse/wgbs -profile <docker|singularity|conda> \

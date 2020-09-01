@@ -118,14 +118,14 @@ process "Picard_MarkDuplicates" {
     script:
     duplicates = "${bamtype == "lambda" ? "lambda" : "duplicates"}"
     """
-    mkdir tmp ${replicate} ${replicate}/${bamtype == "lambda" ? "lambda" : "bam"} ${replicate}/${bamtype == "lambda" ? "lambda" : "bam"}/logs
+    mkdir tmp ${replicate} ${replicate}/lambda ${replicate}/bam ${replicate}/bam/logs
     
     picard -Xmx${task.memory.getBytes() - 2147483648} MarkDuplicates TMP_DIR=tmp \\
     MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=\$(ulimit -n) \\
     VALIDATION_STRINGENCY=LENIENT \\
     I=${bam} O=${replicate}/${bamtype == "lambda" ? "lambda" : "bam"}/${replicate == filename ? "markDups" : "markDups.${filename}"}.bam \\
     M=${replicate}/${replicate == filename ? "${duplicates}" : "${duplicates}.${filename}"}.txt \\
-    > ${replicate}/${bamtype == "lambda" ? "lambda" : "bam"}/logs/markDups.${replicate == filename || bamtype == "lambda" ? "${bamtype}" : "${filename}"}.log 2>&1
+    > ${replicate}/bam/logs/markDups.${replicate == filename || bamtype == "lambda" ? "${bamtype}" : "${filename}"}.log 2>&1
     """
 }
 

@@ -106,7 +106,7 @@ process "fastqc" {
     // eg. [replicate, ["input","merge"], /path/to/replicate]
 
     output:
-    path "fastq/*.{html,zip}"
+    path "fastq/fastqc/*.{html,zip}"
     path "fastq/logs/fastqc.${replicate}.log"
 
     when:
@@ -114,8 +114,8 @@ process "fastqc" {
 
     script:
     """
-    mkdir fastq fastq/logs
-    fastqc ${reads} -threads ${task.cpus} -outdir=fastq > fastq/logs/fastqc.${replicate}.log
+    mkdir fastq fastq/fastqc fastq/logs
+    fastqc ${reads} -threads ${task.cpus} -outdir=fastq/fastqc > fastq/logs/fastqc.${replicate}.log
     """
 
 }

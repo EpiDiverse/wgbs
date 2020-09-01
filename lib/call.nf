@@ -99,7 +99,7 @@ process "Picard_MarkDuplicates" {
     label 'finish'
     tag "$replicate - $bamtype"
 
-    publishDir "${params.output}/bam", pattern: "$replicate/bam/*.bam", mode: 'copy', enabled: params.keepBams ? true : false}
+    publishDir "${params.output}/bam", pattern: "$replicate/bam/*.bam", mode: 'copy', enabled: params.keepBams ? true : false
     publishDir "${params.output}/bam", pattern: "$replicate/*.txt", mode: 'copy'
     publishDir "${params.output}/bam", pattern: "$replicate/*/logs/*.log", mode: 'move'
 

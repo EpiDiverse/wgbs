@@ -524,7 +524,7 @@ workflow {
         CALL.out.conversion_rate_publish.collectFile().subscribe{ it.copyTo("${params.output}/bam/${it.baseName}/stats/BisNonConvRate.txt") }
 
 
-    publishDir:
+    publish:
         // Reference index
         INDEX.out.ebm to: "${params.output}/index", mode: 'copy', enabled: params.INDEX ? true : false
         INDEX.out.ctidx to: "${params.output}/index", mode: 'copy', enabled: params.INDEX ? true : false

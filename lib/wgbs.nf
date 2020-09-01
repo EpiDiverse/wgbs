@@ -505,7 +505,7 @@ process "bam_filtering" {
     label 'finish'
     tag "$replicate - $bamtype"
 
-    publishDir "${params.output}/bam", pattern: "$replicate/bam/*.bam", mode: 'copy', enabled: params.keepBams && bamtype != "lambda" ? true : false
+    publishDir "${params.output}/bam", pattern: "$replicate/bam/*.bam", mode: 'copy', enabled: params.keepBams && $bamtype != "lambda" ? true : false
     publishDir "${params.output}/bam", pattern: "${replicate}.bam", mode: 'copyNoFollow', enabled: true
 
     input:

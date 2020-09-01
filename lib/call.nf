@@ -99,32 +99,32 @@ process "Picard_MarkDuplicates" {
     label 'finish'
     tag "$replicate - $bamtype"
 
-    publishDir "${params.output}/bam", pattern: "$replicate/bam/*.bam", mode: 'copy', enabled: {params.keepBams && bamtype != "lambda" ? true : false}
-    publishDir "${params.output}/bam", pattern: "$replicate/*.txt", mode: 'copy', enabled: {bamtype != "lambda" ? true : false}
-    publishDir "${params.output}/bam", pattern: "$replicate/bam/logs/*.log", mode: 'move'
+    publishDir "${params.output}/bam", pattern: "$replicate/bam/*.bam", mode: 'copy', enabled: params.keepBams ? true : false}
+    publishDir "${params.output}/bam", pattern: "$replicate/*.txt", mode: 'copy'
+    publishDir "${params.output}/bam", pattern: "$replicate/*/logs/*.log", mode: 'move'
 
     input:
     tuple val(replicate), val(bamtype), val(filename), path(bam)
     // eg. [replicate, lambda, replicate, /path/to/*.bam] or [replicate, subset, sample1, /path/to/*.bam]
 
     output:
-    tuple val(replicate), val(bamtype), val(filename), path("$replicate/bam/*.bam")
+    tuple val(replicate), val(bamtype), val(filename), path("$replicate/*/*.bam")
     tuple val(replicate), val(bamtype), val(filename), path("$replicate/*.txt")
-    path "$replicate/bam/logs/*.log"
+    path "$replicate/*/logs/*.log"
 
     when:
     !params.noDedup
 
     script:
     """
-    mkdir tmp ${replicate} ${replicate}/bam ${replicate}/bam/logs
+    mkdir tmp ${replicate} ${replicate}/${bamtype == "lambda" ? "lambda" : "bam"} ${replicate}/${bamtype == "lambda" ? "lambda" : "bam"}/logs
     
     picard -Xmx${task.memory.getBytes() - 2147483648} MarkDuplicates TMP_DIR=tmp \\
     MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=\$(ulimit -n) \\
     VALIDATION_STRINGENCY=LENIENT \\
-    I=${bam} O=${replicate}/bam/${replicate == filename ? "markDups" : "markDups.${filename}"}.bam \\
-    M=${replicate}/${replicate == filename ? "duplicates" : "duplicates.${filename}"}.txt \\
-    > ${replicate}/bam/logs/markDups.${replicate == filename || bamtype == "lambda" ? "${bamtype}" : "${filename}"}.log 2>&1
+    I=${bam} O=${replicate}/${bamtype == "lambda" ? "lambda" : "bam"}/${replicate == filename ? "markDups" : "markDups.${filename}"}.bam \\
+    M=${replicate}/${bamtype == "lambda" ? "lambda" : "bam"}/${replicate == filename ? "duplicates" : "duplicates.${filename}"}.txt \\
+    > ${replicate}/${bamtype == "lambda" ? "lambda" : "bam"}/logs/markDups.${replicate == filename || bamtype == "lambda" ? "${bamtype}" : "${filename}"}.log 2>&1
     """
 }
 
@@ -137,8 +137,10 @@ process "MethylDackel" {
     label 'ignore'
     tag "$replicate - $bamtype"
 
-    publishDir "${params.output}/bedGraph", pattern: "*/*.bedGraph", mode: 'copy', enabled: {bamtype != "lambda" ? true : false}
-    publishDir "${params.output}/bam", pattern: "$replicate/*.svg", mode: 'move', enabled: {bamtype != "lambda" ? true : false}
+    publishDir "${params.output}/bedGraph", pattern: "CpG/*.bedGraph", mode: 'copy'
+    publishDir "${params.output}/bedGraph", pattern: "CHG/*.bedGraph", mode: 'copy'
+    publishDir "${params.output}/bedGraph", pattern: "CHH/*.bedGraph", mode: 'copy'
+    publishDir "${params.output}/bam", pattern: "$replicate/*.svg", mode: 'move'
     publishDir "${params.output}/bedGraph", pattern: "logs/*.err", mode: 'move'
 
     input:
@@ -156,13 +158,13 @@ process "MethylDackel" {
 
     script:
     """
-    mkdir logs bedGraph ${replicate}
+    mkdir logs bedGraph ${replicate} ${bamtype}
     samtools index ${bam}
 
     STR=\$(echo \$(MethylDackel mbias ${bamtype == "lambda" ? "${lamfa}" : "${fasta}"} ${bam} \\
-    ${replicate}/${filename} ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"} 2>&1 | cut -d ":" -f2))
+    ${bamtype == "lambda" ? "lambda" : "$replicate"}/${filename} ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"} 2>&1 | cut -d ":" -f2))
     MethylDackel extract ${bamtype == "lambda" ? "${lamfa}" : "${fasta}"} \\
-    ${bam} ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"}-o ${replicate}/${filename} \$STR \\
+    ${bam} ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"}-o ${bamtype == "lambda" ? "lambda" : "$replicate"}/${filename} \$STR \\
     > logs/${bamtype}.${replicate == filename ? "${replicate}" : "${replicate}.${filename}"}.err 2>&1
 
     find ${replicate} -name "*.bedGraph" -type f |

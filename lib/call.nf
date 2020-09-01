@@ -100,7 +100,7 @@ process "Picard_MarkDuplicates" {
     tag "$replicate - $bamtype"
 
     publishDir "${params.output}/bam", pattern: "$replicate/bam/*.bam", mode: 'copy', enabled: params.keepBams ? true : false
-    publishDir "${params.output}/bam", pattern: "$replicate/*.txt", mode: 'copy'
+    publishDir "${params.output}/bam", pattern: "$replicate/duplicates*.txt", mode: 'move'
     publishDir "${params.output}/bam", pattern: "$replicate/*/logs/*.log", mode: 'move'
 
     input:
@@ -116,6 +116,7 @@ process "Picard_MarkDuplicates" {
     !params.noDedup
 
     script:
+    duplicates = "${bamtype == "lambda" ? "lambda" : "duplicates"}"
     """
     mkdir tmp ${replicate} ${replicate}/${bamtype == "lambda" ? "lambda" : "bam"} ${replicate}/${bamtype == "lambda" ? "lambda" : "bam"}/logs
     
@@ -123,7 +124,7 @@ process "Picard_MarkDuplicates" {
     MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=\$(ulimit -n) \\
     VALIDATION_STRINGENCY=LENIENT \\
     I=${bam} O=${replicate}/${bamtype == "lambda" ? "lambda" : "bam"}/${replicate == filename ? "markDups" : "markDups.${filename}"}.bam \\
-    M=${replicate}/${bamtype == "lambda" ? "lambda" : "bam"}/${replicate == filename ? "duplicates" : "duplicates.${filename}"}.txt \\
+    M=${replicate}/${replicate == filename ? "${duplicates}" : "${duplicates}.${filename}"}.txt \\
     > ${replicate}/${bamtype == "lambda" ? "lambda" : "bam"}/logs/markDups.${replicate == filename || bamtype == "lambda" ? "${bamtype}" : "${filename}"}.log 2>&1
     """
 }

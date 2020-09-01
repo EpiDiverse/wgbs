@@ -4,7 +4,9 @@ process "bam_grouping" {
     label 'low'
     label 'finish'
     tag "$replicate - $bamtype"
-    
+
+    publishDir "${params.output}/bam"
+
     input:
     tuple replicate, bamtype, path(bam)
     // eg. [replicate, lambda, /path/to/unsorted.bam]
@@ -40,7 +42,9 @@ process "bam_sampling" {
     label 'low'
     label 'finish'
     tag "$replicate - $bamtype"
-    
+
+    publishDir "${params.output}/bam"
+
     input:
     tuple replicate, bamtype, path("input.bam"), filename, path("input.txt")
     // eg. [replicate, subset, /path/to/unsorted.bam, sample1, sample1.txt]
@@ -67,7 +71,9 @@ process "bam_processing" {
     label 'low'
     label 'finish'
     tag "$replicate - $bamtype"
-    
+
+    publishDir "${params.output}/bam"
+
     input:
     tuple replicate, bamtype, path("unsorted.bam"), filename
     // eg. [replicate, lambda, /path/to/unsorted.bam, replicate]
@@ -92,6 +98,8 @@ process "Picard_MarkDuplicates" {
     label 'low'
     label 'finish'
     tag "$replicate - $bamtype"
+
+    publishDir "${params.output}/bam"
 
     input:
     tuple replicate, bamtype, filename, path(bam)
@@ -126,6 +134,8 @@ process "MethylDackel" {
     label 'low'
     label 'ignore'
     tag "$replicate - $bamtype"
+
+    publishDir "${params.output}/bedGraph"
 
     input:
     tuple replicate, bamtype, filename, path(bam)

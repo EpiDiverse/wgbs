@@ -523,7 +523,7 @@ workflow {
         CALL(bam,fasta,lamfa,context,chrom)
         CALL.out.conversion_rate_publish.collectFile().subscribe{ it.copyTo("${params.output}/bam/${it.baseName}/stats/BisNonConvRate.txt") }
 
-
+    /*
     publish:
         // Reference index
         INDEX.out.ebm to: "${params.output}/index", mode: 'copy', enabled: params.INDEX ? true : false
@@ -574,6 +574,7 @@ workflow {
         CALL.out.methyldackel_publish_svg to: "${params.output}/bam", mode: 'move'
         CALL.out.methyldackel_log to: "${params.output}/bedGraph", mode: 'move'
         CALL.out.linear_regression_publish to: "${params.output}", mode: 'move'
+    */
 
 }
 

@@ -15,6 +15,8 @@ process "read_trimming" {
     label 'finish'
     tag "$replicate"
 
+    publishDir "${params.output}"
+
     input:
     tuple replicate, readtype, path(reads)
     // eg. [replicate, "input", [read1.fastq.gz, read2.fastq.gz]]
@@ -59,6 +61,8 @@ process "read_merging" {
     label 'finish'
     tag "$replicate"
 
+    publishDir "${params.output}"
+
     input:
     tuple replicate, readtype, path("input"), path("merge")
     // eg. [replicate, ["input","merge"], [/path/to/input/replicate, /path/to/merge/replicate]]
@@ -93,6 +97,8 @@ process "fastqc" {
     label 'ignore'
     tag "$replicate"
 
+    publishDir "${params.output}"
+
     input:
     tuple replicate, readtype, path(reads)
     // eg. [replicate, "input", /path/to/replicate]
@@ -120,6 +126,8 @@ process "erne_bs5" {
 
     label 'finish'
     tag "$replicate"
+
+    publishDir "${params.output}/bam"
 
     input:
     tuple replicate, readtype, path(reads)
@@ -179,6 +187,8 @@ process "segemehl" {
     label 'finish'
     tag "$replicate"
 
+    publishDir "${params.output}/bam"
+
     input:
     tuple replicate, readtype, path(reads)
     // eg. [replicate, ["input"], /path/to/inputs]
@@ -225,6 +235,8 @@ process "erne_bs5_processing" {
 
     label 'finish'
     tag "$replicate"
+
+    publishDir "${params.output}/bam"
 
     input:
     tuple replicate, path(erne)
@@ -324,6 +336,8 @@ process "segemehl_processing" {
     label 'finish'
     tag "$replicate"
 
+    publishDir "${params.output}/bam"
+
     input:
     tuple replicate, path(sege)
     // eg. [replicate, /path/to/input]
@@ -365,7 +379,9 @@ process "bam_merging" {
     label 'low'
     label 'finish'
     tag "$replicate"
-    
+
+    publishDir "${params.output}/bam"
+
     input:
     tuple replicate, erne, path(erne_bs5), sege, path(segemehl)
     // eg. [replicate, proc.erne-bs5.bam, proc.segemehl.bam]
@@ -394,6 +410,8 @@ process "bam_subsetting" {
     label 'low'
     label 'finish'
     tag "$replicate"
+
+    publishDir "${params.output}/bam"
 
     input:
     tuple replicate, bamtype, path(bamfile)
@@ -442,7 +460,9 @@ process "bam_statistics" {
     label 'low'
     label 'ignore'
     tag "$replicate"
-    
+
+    publishDir "${params.output}/bam"
+
     input:
     tuple replicate, bamtype, path(bamfile)
     // eg. [replicate, bamtype, bamfile.bam]
@@ -469,7 +489,9 @@ process "bam_filtering" {
     label 'low'
     label 'finish'
     tag "$replicate - $bamtype"
-    
+
+    publishDir "${params.output}/bam"
+
     input:
     tuple replicate, bamtype, path(bamfile)
     // eg. [replicate, lambda, /path/to/bamfile.bam]

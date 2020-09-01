@@ -424,7 +424,7 @@ process "bam_subsetting" {
     tag "$replicate"
 
     publishDir "${params.output}/bam", pattern: "${replicate}/bam/${chrom}.bam", mode: 'copy', enabled: params.keepBams ? true : false
-    publishDir "${params.output}/bam", pattern: "${replicate}/bam/subset.bam", mode: 'copy', enabled: true
+    publishDir "${params.output}/bam", pattern: "${replicate}/bam/subset.bam", mode: 'copy', enabled: params.keepBams || !params.unique ? true
     publishDir "${params.output}/bam", pattern: "${replicate}.bam", mode: 'copyNoFollow', enabled: true
 
     input:
@@ -505,8 +505,8 @@ process "bam_filtering" {
     label 'finish'
     tag "$replicate - $bamtype"
 
-    publishDir "${params.output}/bam", pattern: "${replicate}/bam/unique.bam", mode: 'copy', enabled: params.keepBams ? true : false
-    publishDir "${params.output}/bam", pattern: "${replicate}/bam/multimapped.bam", mode: 'copy', enabled: params.keepBams ? true : false
+    publishDir "${params.output}/bam", pattern: "${replicate}/bam/unique.bam", mode: 'copy'
+    publishDir "${params.output}/bam", pattern: "${replicate}/bam/multimapped.bam", mode: 'copy'
     publishDir "${params.output}/bam", pattern: "${replicate}.bam", mode: 'copyNoFollow', enabled: true
 
     input:

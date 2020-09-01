@@ -390,7 +390,7 @@ process "bam_merging" {
     tag "$replicate"
 
     publishDir "${params.output}/bam", pattern: "$replicate/bam/merged.bam", mode: 'copy', \
-            enabled: params.keepBams || (params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
+            enabled: params.keepBams || (!params.unique && params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
     publishDir "${params.output}/bam", pattern: "${replicate}.bam", mode: 'copyNoFollow', \
             enabled: params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? true : false
 

@@ -1,3 +1,6 @@
+EpiDiverse-WGBS Pipeline
+========================
+
 [<img width="200" align="right" src="docs/images/euflagbetter.jpg">](https://ec.europa.eu/programmes/horizon2020/en)
 [<img width="200" align="right" src="docs/images/epidiverse-logo.jpg">](https://epidiverse.eu)
 [![Nextflow](https://img.shields.io/badge/nextflow-20.07.1-brightgreen.svg)](https://www.nextflow.io/)
@@ -7,6 +10,7 @@
 [![Publication](https://img.shields.io/badge/Published-bioRxiv-26af64.svg?colorB=26af64&style=popout)](https://www.biorxiv.org/content/10.1101/2020.08.28.271585v1)
 [![Twitter](https://img.shields.io/twitter/follow/epidiverse?style=social)](https://twitter.com/intent/follow?screen_name=epidiverse)
 
+---
 
 EpiDiverse-WGBS Pipeline
 ========================

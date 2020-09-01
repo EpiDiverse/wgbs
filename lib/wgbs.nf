@@ -505,8 +505,8 @@ process "bam_filtering" {
     label 'finish'
     tag "$replicate - $bamtype"
 
-    publishDir "${params.output}/bam", pattern: "${replicate}/bam/subset.bam", saveAs: "${replicate}/bam/unique.bam", mode: 'copy', enabled: params.keepBams ? true : false
-    publishDir "${params.output}/bam", pattern: "${replicate}/bam/subset.multi.bam", saveAs: "${replicate}/bam/multimapped.bam", mode: 'copy', enabled: params.keepBams ? true : false
+    publishDir "${params.output}/bam", pattern: "${replicate}/bam/unique.bam", mode: 'copy', enabled: params.keepBams ? true : false
+    publishDir "${params.output}/bam", pattern: "${replicate}/bam/multimapped.bam", mode: 'copy', enabled: params.keepBams ? true : false
     publishDir "${params.output}/bam", pattern: "${replicate}.bam", mode: 'copyNoFollow', enabled: true
 
     input:
@@ -515,9 +515,9 @@ process "bam_filtering" {
     // eg. [replicate, subset, /path/to/bamfile.bam]
 
     output:
-    tuple val(replicate), val(bamtype), path("${replicate}/bam/${bamtype}.bam")
+    tuple val(replicate), val(bamtype), path("${replicate}/bam/*unique.bam")
     tuple val(replicate), val(bamtype), path("${replicate}/bam/*.bam")
-    tuple val(replicate), val(bamtype), path("${replicate}.bam")
+    tuple val(replicate), val(bamtype), path("${replicate}.bam") optional true
     // eg. [replicate, lambda, /path/to/replicate/*.bam]
     // eg. [replicate, subset, /path/to/replicate/*.bam]
     
@@ -528,7 +528,7 @@ process "bam_filtering" {
     """
     mkdir ${replicate} ${replicate}/bam
 
-    filter_sam_uniqs.py ${bamfile} ${replicate}/bam/${bamtype}.bam ${replicate}/bam/${bamtype}.multi.bam
+    filter_sam_uniqs.py ${bamfile} ${replicate}/bam/${bamtype == "lambda" ? "lambda." : ""}unique.bam ${replicate}/bam/${bamtype == "lambda" ? "lambda." : ""}multimapped.bam
     ln -s ${replicate}/bam/unique.bam ${replicate}.bam
     """
 }

@@ -241,7 +241,7 @@ process "erne_bs5_processing" {
 
     publishDir "${params.output}/bam", pattern: "$replicate/bam/proc.erne-bs5.bam", mode: 'copy', \
             enabled: params.keepBams || (!params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
-    publishDir "${params.output}/bam", pattern: "${replicate}.bam" mode: 'copyNoFollow', \
+    publishDir "${params.output}/bam", pattern: "${replicate}.bam", mode: 'copyNoFollow', \
             enabled: !params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? true : false
 
     input:

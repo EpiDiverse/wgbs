@@ -341,7 +341,7 @@ include './lib/call.nf' params(params)
 // INDEX workflow - secondary pipeline
 workflow 'INDEX' {
 
-    get:
+    take:
         fasta
         fai
         lamfa
@@ -360,7 +360,7 @@ workflow 'INDEX' {
 // WGBS workflow - primary pipeline
 workflow 'WGBS' {
 
-    get:
+    take:
         reads
         merged
         ebm
@@ -436,7 +436,7 @@ workflow 'WGBS' {
 // CALL workflow - secondary pipeline for Methylation Quantification
 workflow "CALL" {
 
-    get:
+    take:
         bam
         fasta
         lamfa
@@ -524,7 +524,7 @@ workflow {
         CALL.out.conversion_rate_publish.collectFile().subscribe{ it.copyTo("${params.output}/bam/${it.baseName}/stats/BisNonConvRate.txt") }
 
 
-    publish:
+    publishDir:
         // Reference index
         INDEX.out.ebm to: "${params.output}/index", mode: 'copy', enabled: params.INDEX ? true : false
         INDEX.out.ctidx to: "${params.output}/index", mode: 'copy', enabled: params.INDEX ? true : false

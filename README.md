@@ -7,7 +7,7 @@ EpiDiverse-WGBS Pipeline
 [![Nextflow](https://img.shields.io/badge/nextflow-20.07.1-45818e.svg)](https://www.nextflow.io/)
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-45818e.svg)](http://bioconda.github.io/)
 [![Docker](https://img.shields.io/docker/automated/epidiverse/wgbs.svg)](https://hub.docker.com/r/epidiverse/wgbs)
-[![Release](https://img.shields.io/github/v/release/epidiverse/wgbs-45818e.svg)]()
+[![Release](https://img.shields.io/github/v/release/epidiverse/wgbs.svg?colorB=45818e)](https://github.com/EpiDiverse/wgbs/releases/latest)
 [![Publication](https://img.shields.io/badge/Published-bioRxiv-45818e.svg?colorB=45818e&style=popout)](https://www.biorxiv.org/content/10.1101/2020.08.28.271585v1)
 [![Twitter](https://img.shields.io/twitter/follow/epidiverse?style=social)](https://twitter.com/intent/follow?screen_name=epidiverse)
 

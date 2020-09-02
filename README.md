@@ -1,11 +1,15 @@
 [<img width="200" align="right" src="docs/images/euflagbetter.jpg">](https://ec.europa.eu/programmes/horizon2020/en)
 [<img width="200" align="right" src="docs/images/epidiverse-logo.jpg">](https://epidiverse.eu)
-[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A519.09.0-brightgreen.svg)](https://www.nextflow.io/)
-[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg)](http://bioconda.github.io/)
-[![Docker](https://img.shields.io/docker/automated/epidiverse/wgbs.svg)](https://hub.docker.com/r/epidiverse/wgbs)
 
 EpiDiverse-WGBS Pipeline
 ========================
+
+[![Nextflow](https://img.shields.io/badge/nextflow-20.07.1-45818e.svg)](https://www.nextflow.io/)
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-45818e.svg)](http://bioconda.github.io/)
+[![Docker](https://img.shields.io/docker/automated/epidiverse/wgbs.svg)](https://hub.docker.com/r/epidiverse/wgbs)
+[![Release](https://img.shields.io/github/v/release/epidiverse/wgbs-45818e.svg)]()
+[![Publication](https://img.shields.io/badge/Published-bioRxiv-45818e.svg?colorB=45818e&style=popout)](https://www.biorxiv.org/content/10.1101/2020.08.28.271585v1)
+[![Twitter](https://img.shields.io/twitter/follow/epidiverse?style=social)](https://twitter.com/intent/follow?screen_name=epidiverse)
 
 **EpiDiverse/wgbs** is a bioinformatics analysis pipeline for aligning whole genome bisulfite sequencing data from non-model plant species.
 
@@ -17,20 +21,20 @@ The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool
 
 ## Quick Start
 
-i. Install [`nextflow`](https://www.nextflow.io/)
+1. Install [`nextflow`](https://www.nextflow.io/)
 
-ii. Install one of [`docker`](https://docs.docker.com/engine/installation/), [`singularity`](https://www.sylabs.io/guides/3.0/user-guide/) or [`conda`](https://conda.io/miniconda.html)
+2. Install one of [`docker`](https://docs.docker.com/engine/installation/), [`singularity`](https://www.sylabs.io/guides/3.0/user-guide/) or [`conda`](https://conda.io/miniconda.html)
 
-iii. Download the pipeline and test it on a minimal dataset with a single command
+3. Download the pipeline and test it on a minimal dataset with a single command
 
 ```bash
-nextflow run epidiverse/wgbs -profile test,<docker|singularity|conda>
+NXF_VER=20.07.1 nextflow run epidiverse/wgbs -profile test,<docker|singularity|conda>
 ```
 
-iv. Start running your own analysis!
+4. Start running your own analysis!
 
 ```bash
-nextflow run epidiverse/wgbs -profile <docker|singularity|conda> \
+NXF_VER=20.07.1 nextflow run epidiverse/wgbs -profile <docker|singularity|conda> \
 --input /path/to/reads/directory --reference /path/to/reference.fasta
 ```
 

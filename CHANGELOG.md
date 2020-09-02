@@ -2,6 +2,12 @@
 ---
 # Releases
 
+
+## v1.0
+* Bring in line with Nextflow 20.07.1 revisions
+* Refactor handling of distinct RGs
+* Updated output directory structure
+
 ---
 # Prereleases
 

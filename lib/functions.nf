@@ -1,5 +1,41 @@
 #!/usr/bin/env nextflow
 
+// FUNCTION TO LOAD DATASETS IN TEST PROFILE
+def check_test_data(readPaths,mergePaths,singleEnd,merge) {
+
+    // SINGLE END TESTDATA
+    if( singleEnd ){
+        reads = Channel
+            .from(readPaths)
+            .map { row -> [ row[0], row[1], [file(row[2][0])]] }
+            .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
+        merged = Channel
+            .from(mergePaths)
+            .map { row -> [ row[0], row[1], [file(row[2][0])]] }
+            .ifEmpty { exit 1, "params.mergePaths was empty - no input files supplied" }
+
+    // PAIRED END TESTDATA
+    } else {
+
+        reads = Channel
+            .from(readPaths)
+            .map { row -> [ row[0], row[1], [file(row[2][0]), file(row[2][1])]] }
+            .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
+        merged = Channel
+            .from(mergePaths)
+            .map { row -> [ row[0], row[1], [file(row[2][0]), file(row[2][1])]] }
+            .ifEmpty { exit 1, "params.mergePaths was empty - no input files supplied" }
+    }
+
+    // return the reads from testdata repo
+    if( merge ) {
+        return tuple(reads, merged)
+    } else {
+        return tuple(reads, Channel.empty())
+    }
+
+}
+
 
 // FUNCTION TO TEST REFERENCE PARAMS IN EPI PROFILE
 def check_ref_errors(reference,thlaspi,fragaria,populus,nolambda) {
@@ -27,7 +63,7 @@ def check_ref_errors(reference,thlaspi,fragaria,populus,nolambda) {
     }
 
     // params.thlaspi
-    else if ( params.thlaspi ) {
+    else if ( thlaspi ) {
         def fasta = file("${thlaspi_dir}/thlaspi.fa", checkIfExists: true, glob: false)
         def fai = file("${thlaspi_dir}/thlaspi.fa.fai", checkIfExists: true, glob: false)
         def ebm = nolambda ? "${thlaspi_dir}/index/thlaspi.ebm" : "${thlaspi_dir}/lambda/lambda.ebm"
@@ -60,41 +96,4 @@ def check_ref_errors(reference,thlaspi,fragaria,populus,nolambda) {
         error "ERROR: please specify a reference genome."
         exit 1
     }
-}
-
-
-// FUNCTION TO LOAD DATASETS IN TEST PROFILE
-def check_test_data(readPaths,mergePaths,singleEnd,merge) {
-
-    // SINGLE END TESTDATA
-    if( singleEnd ){
-        reads = Channel
-            .from(readPaths)
-            .map { row -> [ row[0], [file(row[1][0])]] }
-            .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-        merged = Channel
-            .from(mergePaths)
-            .map { row -> [ row[0], [file(row[1][0])]] }
-            .ifEmpty { exit 1, "params.mergePaths was empty - no input files supplied" }
-
-    // PAIRED END TESTDATA
-    } else {
-
-        reads = Channel
-            .from(readPaths)
-            .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
-            .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-        merged = Channel
-            .from(mergePaths)
-            .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
-            .ifEmpty { exit 1, "params.mergePaths was empty - no input files supplied" }
-    }
-
-    // return the reads from testdata repo
-    if( merge ) {
-        return tuple(reads, merged)
-    } else {
-        return tuple(reads, Channel.empty())
-    }
-
 }

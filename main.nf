@@ -180,7 +180,7 @@ ParameterChecks.checkParams(params)
 // establish path to reads in input and merge dirs
 reads_path = params.SE ? "${params.input}/*.${params.extension}" : "${params.input}/*{1,2}.${params.extension}"
 merge_path = params.SE ? "${params.merge}/*.${params.extension}" : "${params.merge}/*{1,2}.${params.extension}"
-bam_path = "${params.input}/*.bam"
+bam_path = "${params.input}/bam/*.bam"
 
 // determine contexts
 if ((params.noCpG == true) && (params.noCHH == true) && (params.noCHG == true)) {error "ERROR: please specify methylation context for analysis"}

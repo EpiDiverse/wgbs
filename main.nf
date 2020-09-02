@@ -425,27 +425,6 @@ workflow "CALL" {
         chrom
 
     main:
-        /*
-        bam1 = bam.filter{ it[1] != "lambda" }
-        bam2 = bam.map{ tuple(*it, it[0]) }
-        // split by read groups
-        bam_grouping(bam1)
-        //bam_grouping_out = bam_grouping.out.map{ tuple(it[0], tuple(it[1].flatten())) }
-        txt1 = bam_grouping.out.filter{ it[1] instanceof Path }.map{ tuple(it[0], it[0]) } // only one RG present
-        txt2 = bam_grouping.out.filter{ it[1] instanceof Collection && it[1].size() > 1  }.transpose().map{ tuple(it[0], it[1].baseName.tokenize(".").init().join(""), it[1]) }
-        rgs1 = bam.filter{ it[1] != "lambda" }.combine(txt1, by: 0) // eg. [replicate, bamtype, *.bam, filename]
-        rgs2 = bam.filter{ it[1] != "lambda" }.combine(txt2, by: 0) // eg. [replicate, bamtype, *.bam, filename, *.txt]
-        bam_sampling(rgs2) // eg. [replicate, bamtype, sample.bam, filename]
-       
-        // deduplication and methylation calling
-        params.splitRG ? bam_processing(bam2.filter{ it[1] == "lambda" }.mix(rgs1, bam_sampling.out)) : bam_processing(bam2)
-        Picard_MarkDuplicates(bam_processing.out)
-        params.noDedup ? MethylDackel(bam_processing.out,fasta,lamfa,context) : MethylDackel(Picard_MarkDuplicates.out[0],fasta,lamfa,context)
-
-        // conversion rate estimation and duplication statistics
-        conversion_rate_estimation(MethylDackel.out[0],chrom)
-        */
-
         // deduplication and methylation calling
         bam_processing(bam)
         Picard_MarkDuplicates(bam_processing.out)
@@ -453,8 +432,6 @@ workflow "CALL" {
 
         // conversion rate estimation and duplication statistics
         conversion_rate_estimation(MethylDackel.out[0],chrom)
-
-
 
     emit:
         conversion_rate_publish = conversion_rate_estimation.out

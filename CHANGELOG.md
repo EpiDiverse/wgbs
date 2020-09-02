@@ -5,7 +5,7 @@
 
 ## v1.0
 * Bring in line with Nextflow 20.07.1 revisions
-* Allow for multiple RG during alignment
+* Refactor handling of distinct RGs
 * Updated output directory structure
 
 ---

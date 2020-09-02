@@ -333,7 +333,7 @@ if ( params.CALL ){
 // INCLUDES
 include {erne_bs5_indexing;segemehl_indexing} from './lib/index.nf' params(params)
 include {read_trimming;read_merging;fastqc;erne_bs5;segemehl;erne_bs5_processing;segemehl_processing;bam_merging;bam_subsetting;bam_statistics;bam_filtering;} from './lib/wgbs.nf' params(params)
-include {bam_grouping;bam_sampling;bam_processing;Picard_MarkDuplicates;MethylDackel;linear_regression;conversion_rate_estimation} from './lib/call.nf' params(params)
+include {bam_grouping;bam_sampling;bam_processing;Picard_MarkDuplicates;MethylDackel;conversion_rate_estimation} from './lib/call.nf' params(params)
 
 
 // WORKFLOWS
@@ -404,33 +404,13 @@ workflow 'WGBS' {
         bam_statistics(bam_merging.out[0]) : bam_statistics(erne_bs5_processing.out[0].mix(segemehl_processing.out[0]))
 
     emit:
-        read_trimming_publish = read_trimming.out[1]
-        read_trimming_log = read_trimming.out[2]
-        read_merging_publish = read_merging.out[1]
-
-        fastqc_publish = fastqc.out[0]
-        fastqc_log = fastqc.out[1]
-        
-        erne_bs5_publish = erne_bs5.out[0]
-        erne_bs5_log = erne_bs5.out[1]
-        segemehl_publish = segemehl.out[0]
-        segemehl_log = segemehl.out[1]
-        
         erne_bs5_processing_publish = erne_bs5_processing.out[0]
         segemehl_processing_publish = segemehl_processing.out[0]
-        erne_bs5_processing_link = erne_bs5_processing.out[1]
-        segemehl_processing_link = segemehl_processing.out[1]
-        
         bam_merging_publish = bam_merging.out[0]
-        bam_merging_link = bam_merging.out[1]
         bam_subsetting_publish_lambda = bam_subsetting.out[0]
         bam_subsetting_publish_subset = bam_subsetting.out[1]
-        bam_subsetting_link = bam_subsetting.out[2]
         bam_filtering_out = bam_filtering.out[0]
-        bam_filtering_publish = bam_filtering.out[1].filter{ it[1] != "lambda" }
-        bam_filtering_link = bam_filtering.out[2].filter{ it[1] != "lambda" }
-        bam_statistics_publish_sts = bam_statistics.out[0]
-        bam_statistics_publish_png = bam_statistics.out[1]
+
 }
 
 // CALL workflow - secondary pipeline for Methylation Quantification
@@ -462,20 +442,7 @@ workflow "CALL" {
 
         // conversion rate estimation and duplication statistics
         conversion_rate_estimation(MethylDackel.out[0],chrom)
-        //lm = Picard_MarkDuplicates.out[1].filter{ it[1] != "lambda" }.map{ it[3] }.collect()
-        //linear_regression(lm)
 
-    emit:
-        picard_markduplicates_publish_bam = Picard_MarkDuplicates.out[0].filter{ it[1] != "lambda" }
-        picard_markduplicates_publish_sts = Picard_MarkDuplicates.out[1].filter{ it[1] != "lambda" }
-        picard_markduplicates_log = Picard_MarkDuplicates.out[2]
-        
-        methyldackel_publish_bed = MethylDackel.out[0].filter{ it[1] != "lambda" }
-        methyldackel_publish_svg = MethylDackel.out[1].filter{ it[1] != "lambda" }
-        methyldackel_log = MethylDackel.out[2]
-
-        conversion_rate_publish = conversion_rate_estimation.out
-        //linear_regression_publish = linear_regression.out
 }
 
 
@@ -484,7 +451,7 @@ workflow {
 
     main:
         // skip INDEX and WGBS workflow
-        if (params.CALL) {
+        if (params.CALL && !params.WGBS) {
 
             INDEX(Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty())
             WGBS(Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty())
@@ -520,61 +487,10 @@ workflow {
         }
 
         // CALL workflow
-        CALL(bam,fasta,lamfa,context,chrom)
-        CALL.out.conversion_rate_publish.collectFile().subscribe{ it.copyTo("${params.output}/bam/${it.baseName}/stats/BisNonConvRate.txt") }
-
-    /*
-    publish:
-        // Reference index
-        INDEX.out.ebm to: "${params.output}/index", mode: 'copy', enabled: params.INDEX ? true : false
-        INDEX.out.ctidx to: "${params.output}/index", mode: 'copy', enabled: params.INDEX ? true : false
-        INDEX.out.gaidx to: "${params.output}/index", mode: 'copy', enabled: params.INDEX ? true : false
-        
-        // Initial processing and alignment
-        WGBS.out.read_trimming_publish to: "${params.output}", mode: 'copy', enabled: params.keepReads && !params.merge ? true : false
-        WGBS.out.read_merging_publish to: "${params.output}", mode: 'copy', enabled: params.keepReads && params.trim ? true : false
-        WGBS.out.erne_bs5_publish to: "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
-        WGBS.out.segemehl_publish to: "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
-
-        // Post-Processed BAM files
-        WGBS.out.erne_bs5_processing_publish to: "${params.output}/bam", mode: 'copy', \
-            enabled: params.keepBams || (!params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
-        WGBS.out.segemehl_processing_publish to: "${params.output}/bam", mode: 'copy', \
-            enabled: params.keepBams || (!params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
-        WGBS.out.erne_bs5_processing_link to: "${params.output}/bam", mode: 'copyNoFollow', \
-            enabled: !params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? true : false
-        WGBS.out.segemehl_processing_link to: "${params.output}/bam", mode: 'copyNoFollow', \
-            enabled: !params.merge && params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? true : false
-
-        // Merging and Subsetting BAM files
-        WGBS.out.bam_merging_publish to: "${params.output}/bam", mode: 'copy', \
-            enabled: params.keepBams || (params.noLambda && params.split == "${baseDir}/data/lambda.fa") ? true : false
-        WGBS.out.bam_merging_link to: "${params.output}/bam", mode: 'copyNoFollow', \
-            enabled: params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? true : false
-        WGBS.out.bam_subsetting_publish_lambda to: "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
-        WGBS.out.bam_subsetting_publish_subset to: "${params.output}/bam", mode: 'copy', enabled: true
-        WGBS.out.bam_subsetting_link to: "${params.output}/bam", mode: 'copyNoFollow', enabled: true
-        WGBS.out.bam_filtering_publish to: "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
-        WGBS.out.bam_filtering_link to: "${params.output}/bam", mode: 'copyNoFollow', enabled: true
-
-        // Deduplication and Methylation Calling
-        CALL.out.picard_markduplicates_publish_bam to: "${params.output}/bam", mode: 'copy', enabled: params.keepBams ? true : false
-        CALL.out.methyldackel_publish_bed to: "${params.output}/bedGraph", mode: 'copy'
-
-        // Reports, statistics and logs
-        WGBS.out.read_trimming_log to: "${params.output}", mode: 'move'
-        WGBS.out.fastqc_publish to: "${params.output}", mode: 'move'
-        WGBS.out.fastqc_log to: "${params.output}", mode: 'move'
-        WGBS.out.erne_bs5_log to: "${params.output}/bam", mode: 'move'
-        WGBS.out.segemehl_log to: "${params.output}/bam", mode: 'move'
-        WGBS.out.bam_statistics_publish_sts to: "${params.output}/bam", mode: 'copy'
-        WGBS.out.bam_statistics_publish_png to: "${params.output}/bam", mode: 'move'
-        CALL.out.picard_markduplicates_publish_sts to: "${params.output}/bam", mode: 'copy'
-        CALL.out.picard_markduplicates_log to: "${params.output}/bam", mode: 'move'
-        CALL.out.methyldackel_publish_svg to: "${params.output}/bam", mode: 'move'
-        CALL.out.methyldackel_log to: "${params.output}/bedGraph", mode: 'move'
-        CALL.out.linear_regression_publish to: "${params.output}", mode: 'move'
-    */
+        if (params.CALL || !params.WGBS) {
+            CALL(bam,fasta,lamfa,context,chrom)
+            CALL.out.conversion_rate_publish.collectFile().subscribe{ it.copyTo("${params.output}/bam/${it.baseName}/stats/BisNonConvRate.txt") }
+        }
 
 }
 

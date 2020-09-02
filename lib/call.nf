@@ -18,7 +18,7 @@ process "bam_grouping" {
     // eg. [replicate, [sample1.txt, sample2.txt, ... sampleN.txt]]
     
     when:
-    !params.ignoreRG && bamytype != "lambda"
+    params.splitRG && bamtype != "lambda"
 
     script:
     """
@@ -54,7 +54,7 @@ process "bam_sampling" {
     // eg. [replicate, subset, /path/to/sample.bam, sample1]
     
     when:
-    !params.ignoreRG && bamtype != "lambda"
+    params.splitRG && bamtype != "lambda"
 
     script:
     """

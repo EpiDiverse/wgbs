@@ -436,7 +436,7 @@ workflow "CALL" {
         bam_sampling(rgs2) // eg. [replicate, bamtype, sample.bam, filename]
        
         // deduplication and methylation calling
-        params.ignoreRG ? bam_processing(bam2) : bam_processing(bam2.filter{ it[1] == "lambda" }.mix(rgs1, bam_sampling.out))
+        params.splitRG ? bam_processing(bam2.filter{ it[1] == "lambda" }.mix(rgs1, bam_sampling.out)) : bam_processing(bam2)
         Picard_MarkDuplicates(bam_processing.out)
         params.noDedup ? MethylDackel(bam_processing.out,fasta,lamfa,context) : MethylDackel(Picard_MarkDuplicates.out[0],fasta,lamfa,context)
 

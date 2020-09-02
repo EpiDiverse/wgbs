@@ -59,7 +59,7 @@ process "Picard_MarkDuplicates" {
     VALIDATION_STRINGENCY=LENIENT \\
     I=${bam} O=${replicate}/${bamtype == "lambda" ? "lambda" : "bam"}/markDups.bam \\
     M=${replicate}/${duplicates}.txt \\
-    > ${replicate}/bam/logs/markDups.${bamtype == "lambda" ? "lambda" : "${filename}"}.log 2>&1
+    > ${replicate}/bam/logs/markDups.${bamtype == "lambda" ? "lambda" : "$replicate"}.log 2>&1
     """
 }
 

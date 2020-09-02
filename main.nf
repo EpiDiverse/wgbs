@@ -61,6 +61,11 @@ if(params.help){
               --INDEX                         Specify if you would like the pipeline to generate the reference genome index
                                           automatically based on the options provided to the pipeline run. [default: off]
 
+              --WGBS                          Specify if you would like to run only the WGBS workflow [default: off]
+
+              --CALL                          Specify if you would like to run only the methylation calling workflow
+                                          NB: changes the behaviour of --input to expect existing *.bam files. [default: off]
+
               --segemehl                      Enable bisulfite read alignment using only 'segemehl'. This has higher precision
                                           but is more memory and time intensive than 'erne-bs5'. [default: off]
 
@@ -81,9 +86,6 @@ if(params.help){
                                           should be removed from the final alignment bam files. [default: off]
                   
               --noDedup                       Skip de-duplication step for downstream filtering of PCR duplicates. [default: off]
-
-              --keepIndex                     Specify if you would like to keep generated index files. Can be used interchangeably
-                                          with --INDEX to perform the same function while keeping index files. [default: off]
 
               --keepReads                     Specify if you would like to keep processed reads eg. after trimming [default: off]
 

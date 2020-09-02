@@ -205,7 +205,7 @@ gaidx = params.INDEX || params.CALL ? Channel.empty() : file("${gaidx_path}", ch
 chrom = lamfa.withReader{ it.readLine() }.tokenize(' ').get(0).substring(1)
 
 // PRINT LOGGING INFO
-if (params.CALL){
+if (params.CALL && !params.WGBS){
 
     // PRINT SECONDARY LOGGING INFO
     log.info ""
@@ -284,7 +284,7 @@ log.info ""
 /////////////////////
 
 // CALL workflow takes priority over -profile test
-if ( params.CALL ){
+if ( params.CALL && !params.WGBS ){
 
     // STAGE BAM CHANNEL
     bam = Channel
@@ -469,8 +469,11 @@ workflow {
         // skip INDEX and WGBS workflow
         if (params.CALL && !params.WGBS) {
 
-            INDEX(Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty())
-            WGBS(Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty())
+            CALL(bam,fasta,lamfa,context,chrom)
+            CALL.out.conversion_rate_publish.collectFile().subscribe{ it.copyTo("${params.output}/bam/${it.baseName}/stats/BisNonConvRate.txt") }
+
+            //INDEX(Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty())
+            //WGBS(Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty())
 
         } else {
 
@@ -483,7 +486,7 @@ workflow {
             // genome index available
             } else {
 
-                INDEX(Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty())
+                //INDEX(Channel.empty(),Channel.empty(),Channel.empty(),Channel.empty())
                 WGBS(reads,merged,ebm,ctidx,gaidx,fasta,fai,lamfa,lai,chrom)
 
             }
@@ -500,13 +503,19 @@ workflow {
                 WGBS.out.bam_merging_publish : WGBS.out.erne_bs5_processing_publish.mix(WGBS.out.segemehl_processing_publish)
 
             }
+
+            CALL(bam,fasta,lamfa,context,chrom)
+            CALL.out.conversion_rate_publish.collectFile().subscribe{ it.copyTo("${params.output}/bam/${it.baseName}/stats/BisNonConvRate.txt") }
+
         }
 
+        /*
         // CALL workflow
         if (params.CALL || !params.WGBS) {
             CALL(bam,fasta,lamfa,context,chrom)
             CALL.out.conversion_rate_publish.collectFile().subscribe{ it.copyTo("${params.output}/bam/${it.baseName}/stats/BisNonConvRate.txt") }
         }
+        */
 
 }
 

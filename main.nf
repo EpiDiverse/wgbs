@@ -481,8 +481,11 @@ workflow {
 
             }
 
-            CALL(bam,fasta,lamfa,context,chrom)
-            CALL.out.conversion_rate_publish.collectFile().subscribe{ it.copyTo("${params.output}/bam/${it.baseName}/stats/BisNonConvRate.txt") }
+            if ( !params.WGBS ) {
+
+                CALL(bam,fasta,lamfa,context,chrom)
+                CALL.out.conversion_rate_publish.collectFile().subscribe{ it.copyTo("${params.output}/bam/${it.baseName}/stats/BisNonConvRate.txt") }
+            }
 
         }
 

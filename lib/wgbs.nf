@@ -221,7 +221,7 @@ process "segemehl" {
         -q ${reads[0]} -p ${reads[1]} -o raw.segemehl.sam -I ${params.maxIns} -A ${params.minAccuracy} -s -t ${task.cpus} -F 1 -H 1 -D 1 \\
         > ${replicate}/bam/logs/raw.segemehl.log 2>&1 || exit \$?
 
-        grep -v "^@RG" raw.segemehl.bam | samtools addreplacerg -r 'ID:${replicate}' -r 'SM:${replicate}' - |
+        grep -v "^@RG" raw.segemehl.sam | samtools addreplacerg -r 'ID:${replicate}' -r 'SM:${replicate}' - |
         samtools view -Sb - > ${replicate}/bam/raw.segemehl.bam
         """
 

@@ -1,5 +1,5 @@
-// PRE-PROCESS BAMFILES READY FOR DOWNSTREAM METHYLATION EXTRACTION
-process "bam_processing" {
+// SPLIT BAMS ACCORDING TO READ GROUPS
+process "bam_grouping" {
 
     label 'low'
     label 'finish'
@@ -13,9 +13,76 @@ process "bam_processing" {
     // eg. [replicate, subset, /path/to/unsorted.bam]
 
     output:
-    tuple val(replicate), val(bamtype), path("unique.bam")
-    // eg. [replicate, lambda, /path/to/unique.bam]
-    // eg. [replicate, subset, /path/to/unique.bam]
+    tuple val(replicate), path("*.txt")
+    // eg. [replicate, no_sample_specified.txt]
+    // eg. [replicate, [sample1.txt, sample2.txt, ... sampleN.txt]]
+    
+    when:
+    params.splitRG && bamtype != "lambda"
+
+    script:
+    """
+    samtools view -H ${bam} | grep "^@RG" |
+    awk '{for(i=1;i<=NF;i++){if(\$i~"^ID"){split(\$i,ID,":")}else{if(\$i~"^SM"){split(\$i,SM,":")}}};
+    print ID[2] >> SM[2]".txt"}'
+    """ 
+}
+
+// [replicate, [sample1.txt, sample2.txt, ... sampleN.txt]]
+// txts.transpose().map{ tuple(it[0], it[1].tokenize(".").init().join(""), it[1]) }
+// [replicate, sample1, sample1.txt], [replicate, sample2, sample2.txt], ...
+
+// [replicate, subset, /path/to/unsorted.bam]
+// bams.filter( it[1] == "subset" ).combine(txts, by:0)
+// [replicate, subset, /path/to/unsorted.bam, sample1, sample1.txt]
+
+// PRE-PROCESS BAMFILES READY FOR DOWNSTREAM METHYLATION EXTRACTION
+process "bam_sampling" {
+
+    label 'low'
+    label 'finish'
+    tag "$replicate - $bamtype"
+
+    //publishDir "${params.output}/bam"
+
+    input:
+    tuple val(replicate), val(bamtype), path("input.bam"), val(filename), path("input.txt")
+    // eg. [replicate, subset, /path/to/unsorted.bam, sample1, sample1.txt]
+
+    output:
+    tuple val(replicate), val(bamtype), path("sample.bam"), val(filename)
+    // eg. [replicate, subset, /path/to/sample.bam, sample1]
+    
+    when:
+    params.splitRG && bamtype != "lambda"
+
+    script:
+    """
+    samtools view -bhR input.txt input.bam > sample.bam
+    """ 
+}
+
+
+// bams.filter{ it[1] == "lambda" }.map{ tuple(it[0], it[1], it[0], it[2]) }
+
+// PRE-PROCESS BAMFILES READY FOR DOWNSTREAM METHYLATION EXTRACTION
+process "bam_processing" {
+
+    label 'low'
+    label 'finish'
+    tag "$replicate - $bamtype"
+
+    //publishDir "${params.output}/bam"
+
+    input:
+    tuple val(replicate), val(bamtype), path("unsorted.bam"), val(filename)
+    // eg. [replicate, lambda, /path/to/unsorted.bam, replicate]
+    // eg. [replicate, subset, /path/to/unsorted.bam, sample1]
+
+    output:
+    tuple val(replicate), val(bamtype), val(filename), path("unique.bam")
+    // eg. [replicate, lambda, replicate, /path/to/unique.bam]
+    // eg. [replicate, subset, sample1, /path/to/unique.bam]
     
     script:
     """
@@ -33,17 +100,16 @@ process "Picard_MarkDuplicates" {
     tag "$replicate - $bamtype"
 
     publishDir "${params.output}/bam", pattern: "$replicate/bam/*.bam", mode: 'copy', enabled: params.keepBams ? true : false
-    publishDir "${params.output}/bam", pattern: "$replicate/duplicates.txt", mode: 'move'
+    publishDir "${params.output}/bam", pattern: "$replicate/duplicates*.txt", mode: 'move'
     publishDir "${params.output}/bam", pattern: "$replicate/*/logs/*.log", mode: 'move'
 
     input:
-    tuple val(replicate), val(bamtype), path(bam)
-    // eg. [replicate, lambda, /path/to/*.bam]
-    // eg. [replicate, subset, /path/to/*.bam]
+    tuple val(replicate), val(bamtype), val(filename), path(bam)
+    // eg. [replicate, lambda, replicate, /path/to/*.bam] or [replicate, subset, sample1, /path/to/*.bam]
 
     output:
-    tuple val(replicate), val(bamtype), path("$replicate/*/*.bam")
-    tuple val(replicate), val(bamtype), path("$replicate/*.txt")
+    tuple val(replicate), val(bamtype), val(filename), path("$replicate/*/*.bam")
+    tuple val(replicate), val(bamtype), val(filename), path("$replicate/*.txt")
     path "$replicate/*/logs/*.log"
 
     when:
@@ -57,9 +123,9 @@ process "Picard_MarkDuplicates" {
     picard -Xmx${task.memory.getBytes() - 2147483648} MarkDuplicates TMP_DIR=tmp \\
     MAX_FILE_HANDLES_FOR_READ_ENDS_MAP=\$(ulimit -n) \\
     VALIDATION_STRINGENCY=LENIENT \\
-    I=${bam} O=${replicate}/${bamtype == "lambda" ? "lambda" : "bam"}/markDups.bam \\
-    M=${replicate}/${duplicates}.txt \\
-    > ${replicate}/bam/logs/markDups.${bamtype == "lambda" ? "lambda" : "${filename}"}.log 2>&1
+    I=${bam} O=${replicate}/${bamtype == "lambda" ? "lambda" : "bam"}/${replicate == filename ? "markDups" : "markDups.${filename}"}.bam \\
+    M=${replicate}/${replicate == filename ? "${duplicates}" : "${duplicates}.${filename}"}.txt \\
+    > ${replicate}/bam/logs/markDups.${replicate == filename || bamtype == "lambda" ? "${bamtype}" : "${filename}"}.log 2>&1
     """
 }
 
@@ -79,16 +145,16 @@ process "MethylDackel" {
     publishDir "${params.output}/bedGraph", pattern: "logs/*.err", mode: 'move'
 
     input:
-    tuple val(replicate), val(bamtype), path(bam)
-    // eg. [replicate, lambda, markDups.bam]
-    // eg. [replicate, subset, markDups.bam]
+    tuple val(replicate), val(bamtype), val(filename), path(bam)
+    // eg. [replicate, lambda, replicate, markDups.bam]
+    // eg. [replicate, subset, sample1, markDups.bam]
     path fasta
     path lamfa
     val context
     
     output:
-    tuple val(replicate), val(bamtype), path("*/*.bedGraph")
-    tuple val(replicate), val(bamtype), path("*/*.svg")
+    tuple val(replicate), val(bamtype), val(filename), path("*/*.bedGraph")
+    tuple val(replicate), val(bamtype), val(filename), path("*/*.svg")
     path "logs/*.err"
 
     script:
@@ -97,14 +163,14 @@ process "MethylDackel" {
     samtools index ${bam}
 
     STR=\$(echo \$(MethylDackel mbias ${bamtype == "lambda" ? "${lamfa}" : "${fasta}"} ${bam} \\
-    ${bamtype == "lambda" ? "lambda" : "$replicate"}/${replicate} ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"} 2>&1 | cut -d ":" -f2))
+    ${bamtype == "lambda" ? "lambda" : "$replicate"}/${filename} ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"} 2>&1 | cut -d ":" -f2))
     MethylDackel extract ${bamtype == "lambda" ? "${lamfa}" : "${fasta}"} \\
-    ${bam} ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"}-o ${bamtype == "lambda" ? "lambda" : "$replicate"}/${replicate} \$STR \\
-    > logs/${bamtype}.${replicate}.err 2>&1
+    ${bam} ${bamtype == "lambda" ? "--CHH --CHG " : "${context}"}-o ${bamtype == "lambda" ? "lambda" : "$replicate"}/${filename} \$STR \\
+    > logs/${bamtype}.${replicate == filename ? "${replicate}" : "${replicate}.${filename}"}.err 2>&1
 
     find ${replicate} -name "*.bedGraph" -type f |
     while read file; do id=\$(basename \$file .bedGraph);
-    mkdir \${id##*_}; mv \$file \${id##*_}/${replicate}.bedGraph;
+    mkdir \${id##*_}; mv \$file \${id##*_}/${replicate == filename ? "${replicate}" : "${replicate}.${filename}"}.bedGraph;
     done
     """
 }
@@ -119,9 +185,9 @@ process "conversion_rate_estimation" {
     tag "$replicate - ${ bamtype == "lambda" ? "${chrom}" : "${params.chrom}" }"
     
     input:
-    tuple val(replicate), val(bamtype), path("bedGraph")
-    // eg. [replicate, lambda, [CpG.bedGraph, CHG.bedGraph, CHH.bedGraph]]
-    // eg. [replicate, subset, [CpG.bedGraph, CHG.bedGraph, CHH.bedGraph]]
+    tuple val(replicate), val(bamtype), val(filename), path("bedGraph")
+    // eg. [replicate, lambda, replicate, [CpG.bedGraph, CHG.bedGraph, CHH.bedGraph]]
+    // eg. [replicate, subset, sample1, [CpG.bedGraph, CHG.bedGraph, CHH.bedGraph]]
     // lambda bamtype will always have each context in bedGraph files
     val chrom
 

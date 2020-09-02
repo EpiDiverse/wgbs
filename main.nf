@@ -333,7 +333,8 @@ if ( params.CALL ){
 // INCLUDES
 include {erne_bs5_indexing;segemehl_indexing} from './lib/index.nf' params(params)
 include {read_trimming;read_merging;fastqc;erne_bs5;segemehl;erne_bs5_processing;segemehl_processing;bam_merging;bam_subsetting;bam_statistics;bam_filtering;} from './lib/wgbs.nf' params(params)
-include {bam_grouping;bam_sampling;bam_processing;Picard_MarkDuplicates;MethylDackel;conversion_rate_estimation} from './lib/call.nf' params(params)
+//include {bam_grouping;bam_sampling;bam_processing;Picard_MarkDuplicates;MethylDackel;conversion_rate_estimation} from './lib/call.nf' params(params)
+include {bam_processing;Picard_MarkDuplicates;MethylDackel;conversion_rate_estimation} from './lib/call.nf' params(params)
 
 
 // WORKFLOWS
@@ -424,6 +425,7 @@ workflow "CALL" {
         chrom
 
     main:
+        /*
         bam1 = bam.filter{ it[1] != "lambda" }
         bam2 = bam.map{ tuple(*it, it[0]) }
         // split by read groups
@@ -442,7 +444,18 @@ workflow "CALL" {
 
         // conversion rate estimation and duplication statistics
         conversion_rate_estimation(MethylDackel.out[0],chrom)
-    
+        */
+
+        // deduplication and methylation calling
+        bam_processing(bam)
+        Picard_MarkDuplicates(bam_processing.out)
+        params.noDedup ? MethylDackel(bam_processing.out,fasta,lamfa,context) : MethylDackel(Picard_MarkDuplicates.out[0],fasta,lamfa,context)
+
+        // conversion rate estimation and duplication statistics
+        conversion_rate_estimation(MethylDackel.out[0],chrom)
+
+
+
     emit:
         conversion_rate_publish = conversion_rate_estimation.out
     

@@ -406,7 +406,7 @@ process "bam_merging" {
     """
     mkdir ${replicate} ${replicate}/bam
     ln -s ${replicate}/bam/merged.bam ${replicate}.bam
-    samtools merge ${replicate}/bam/merged.bam ${erne_bs5} ${segemehl}
+    samtools merge -c ${replicate}/bam/merged.bam ${erne_bs5} ${segemehl}
     """
 }
 

@@ -442,7 +442,10 @@ workflow "CALL" {
 
         // conversion rate estimation and duplication statistics
         conversion_rate_estimation(MethylDackel.out[0],chrom)
-
+    
+    emit:
+        conversion_rate_publish = conversion_rate_estimation.out
+    
 }
 
 

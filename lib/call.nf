@@ -176,33 +176,6 @@ process "MethylDackel" {
 }
 
 
-// LINEAR REGRESSION OF DUPLICATES
-process "linear_regression" {
-
-    label 'low'
-    label 'ignore'
-
-    publishDir "${params.output}", pattern: "Duplicates.*", mode: 'move'
-
-    input:
-    path "duplicates"
-    // eg. [/path/to/duplicates.txt, ...]
-
-    output:
-    path "Duplicates.*"
-
-    when:
-    !params.noDedup
-
-    script:
-    """
-    ls duplicates* | while read file; do grep -A2 "^## METRICS CLASS" \$file | 
-    tail -1 | cut -f ${params.SE ? "2,6" : "3,7"} >> Duplicates.tsv; done
-
-    Rscript ${baseDir}/bin/scatterPlot.R Duplicates.tsv
-    """
-}
-
 
 // ESTIMATION OF CONVERSION RATE FROM LAMBDA
 process "conversion_rate_estimation" {

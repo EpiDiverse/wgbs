@@ -150,23 +150,25 @@ process "erne_bs5" {
         """
         mkdir ${replicate} ${replicate}/bam ${replicate}/bam/logs
 
-        erne-bs5 --reference ${ebm} --query1 ${reads} --fragment-size-min ${params.minIns} --fragment-size-max ${params.maxIns} --sample ${replicate} \\
+        erne-bs5 --reference ${ebm} --query1 ${reads} --fragment-size-min ${params.minIns} --fragment-size-max ${params.maxIns} \\
         ${params.maxErrors.toInteger() < 0 ? "--errors ${params.maxErrors} " : " "}--threads ${task.cpus - 2} --output unsorted.erne-bs5.bam --print-all \\
         > ${replicate}/bam/logs/raw.erne-bs5.log 2>&1 || exit \$?
 
+        samtools view -h unsorted.erne-bs5.bam | grep -v "^@RG" | samtools addreplacerg -r 'ID:${replicate}' -r 'SM:${replicate}' - |
         samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
-        -o ${replicate}/bam/raw.erne-bs5.bam unsorted.erne-bs5.bam
+        -o ${replicate}/bam/raw.erne-bs5.bam -
         """
     else
         """
         mkdir ${replicate} ${replicate}/bam ${replicate}/bam/logs
 
-        erne-bs5 --reference ${ebm} --query1 ${reads[0]} --query2 ${reads[1]} --fragment-size-min ${params.minIns} --fragment-size-max ${params.maxIns} --sample ${replicate} \\
+        erne-bs5 --reference ${ebm} --query1 ${reads[0]} --query2 ${reads[1]} --fragment-size-min ${params.minIns} --fragment-size-max ${params.maxIns} \\
         ${params.maxErrors.toInteger() < 0 ? "--errors ${params.maxErrors} " : " "}--threads ${task.cpus - 2} --output unsorted.erne-bs5.bam --print-all \\
         > ${replicate}/bam/logs/raw.erne-bs5.log 2>&1 || exit \$?
 
+        samtools view -h unsorted.erne-bs5.bam | grep -v "^@RG" | samtools addreplacerg -r 'ID:${replicate}' -r 'SM:${replicate}' - |
         samtools sort -T deleteme -m ${((task.memory.getBytes() / task.cpus) * 0.9).round(0)} -@ ${task.cpus} \\
-        -o ${replicate}/bam/raw.erne-bs5.bam unsorted.erne-bs5.bam
+        -o ${replicate}/bam/raw.erne-bs5.bam -
         """
 
 }
@@ -206,9 +208,10 @@ process "segemehl" {
         segemehl.x -i ${ctidx} -j ${gaidx} \\
         -d ${params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${fasta}" : "${fasta} ${lamfa}"} \\
         -q ${reads} -o raw.segemehl.sam -I ${params.maxIns} -A ${params.minAccuracy} -s -t ${task.cpus} -F 1 -H 1 -D 1 \\
-        -g ${replicate} \\
         > ${replicate}/bam/logs/raw.segemehl.log 2>&1 || exit \$?
-        samtools view -Sb raw.segemehl.sam > ${replicate}/bam/raw.segemehl.bam
+
+        grep -v "^@RG" raw.segemehl.sam | samtools addreplacerg -r 'ID:${replicate}' -r 'SM:${replicate}' - |
+        samtools view -Sb - > ${replicate}/bam/raw.segemehl.bam
         """
     else
         """
@@ -216,9 +219,10 @@ process "segemehl" {
         segemehl.x -i ${ctidx} -j ${gaidx} \\
         -d ${params.noLambda && params.split == "${baseDir}/data/lambda.fa" ? "${fasta}" : "${fasta} ${lamfa}"} \\
         -q ${reads[0]} -p ${reads[1]} -o raw.segemehl.sam -I ${params.maxIns} -A ${params.minAccuracy} -s -t ${task.cpus} -F 1 -H 1 -D 1 \\
-        -g ${replicate} \\
         > ${replicate}/bam/logs/raw.segemehl.log 2>&1 || exit \$?
-        samtools view -Sb raw.segemehl.sam > ${replicate}/bam/raw.segemehl.bam
+
+        grep -v "^@RG" raw.segemehl.bam | samtools addreplacerg -r 'ID:${replicate}' -r 'SM:${replicate}' - |
+        samtools view -Sb - > ${replicate}/bam/raw.segemehl.bam
         """
 
 }

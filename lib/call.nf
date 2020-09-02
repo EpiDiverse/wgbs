@@ -8,7 +8,7 @@ process "bam_processing" {
     //publishDir "${params.output}/bam"
 
     input:
-    tuple val(replicate), val(bamtype), path(bam)
+    tuple val(replicate), val(bamtype), path("unsorted.bam")
     // eg. [replicate, lambda, /path/to/unsorted.bam]
     // eg. [replicate, subset, /path/to/unsorted.bam]
 

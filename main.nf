@@ -378,8 +378,11 @@ workflow 'WGBS' {
     main:
         // read trimming and merging
         read_trimming(reads.mix(merged))
+
+        if(params.merge){
         params.trim ? read_merging(read_trimming.out[0].groupTuple().map{ tuple(it[0], it[1], *it[2]) }) :\
         read_merging(reads.mix(merged).groupTuple().map{ tuple(it[0], it[1], *it[2]) })
+        }
 
         // fastqc process
         params.merge ? fastqc(read_merging.out[0]) :\

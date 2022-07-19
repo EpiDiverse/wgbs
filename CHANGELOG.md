@@ -2,6 +2,9 @@
 ---
 # Releases
 
+## v1.1
+* Update documentation
+* Fix L458 in lib/wgbs.nf creating empty header with Docker/Singularity container
 
 ## v1.0
 * Bring in line with Nextflow 20.07.1 revisions

@@ -128,6 +128,7 @@ if(params.help){
               --help                          Display this help information and exit
               --version                       Display the current pipeline version and exit
               --debug                         Run the pipeline in debug mode
+              --take [INT]                    Limit analysis of input samples to INT. [default: 20] 
 
 
          Example: 

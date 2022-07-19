@@ -455,7 +455,7 @@ process "bam_subsetting" {
     samtools index sort.bam
 
     # remove lambda from the header and split bams
-    samtools view -H sort.bam | awk '\$1~/^@[[:upper:]]{2}/ && \$2!="SN:${chrom}"' > header.sam || exit \$?
+    samtools view -H sort.bam | awk '\$1~/^@/ && \$2!="SN:${chrom}"' > header.sam || exit \$?
     awk '{printf("%s\\t0\\t%s\\n",\$1,\$2);}' ${fai} > fai.tmp
     samtools view -bL fai.tmp sort.bam | samtools reheader header.sam - > ${replicate}/bam/subset.bam || exit \$?
     samtools view sort.bam ${chrom} | samtools view -bt ${lai} - > ${replicate}/bam/${chrom}.bam
